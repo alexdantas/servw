@@ -161,6 +161,7 @@ void daemonize(FILE* logfile, char* logname, FILE* errfile, char* errlogname)
     exit(EXIT_FAILURE);
   }
 
+  /* mandar stdin pra /dev/null */
   retval = dup2(STDIN_FILENO, open("/dev/null", O_RDWR));
   if (retval == -1)
     perror("Error at dup2()");
@@ -193,6 +194,7 @@ int main(int argc, char *argv[])
   fd_set writefds;
   fd_set clientfds;
 
+  char buffer[BUFFER_SIZE];
   int retval;
   int i;
 
@@ -207,9 +209,6 @@ int main(int argc, char *argv[])
 
   /* Inicializar servidor */
   port_number = atoi(argv[1]);
-  /*
-  if (rootdir[rootdirsize] == '/')
-    rootdir[rootdirsize] = '\0'; */
 
   memset(rootdir, '\0', BUFFER_SIZE);
   rootdirsize = BUFFER_SIZE;
@@ -228,11 +227,13 @@ int main(int argc, char *argv[])
     rootdirsize -= strlen (argv[2]);
   }
 
-  if (realpath(rootdir, rootdir) == NULL)
+
+  if (realpath(rootdir, buffer) == NULL)
   {
     perror("Error at realpath()");
     exit(EXIT_FAILURE);
   }
+  strncpy(rootdir, buffer, rootdirsize - 1);
 
   printf("Root directory set to: %s\n", rootdir);
 

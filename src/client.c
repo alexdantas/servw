@@ -90,21 +90,46 @@ int handler_init(struct clienthandler_t* h, int sck, char* rootdir)
 /** Checa se o arquivo descrito dentro de 'h' existe ou nao e atribui
  *  a 'h' a mensagem de erro correspondente.
  *
+ *  Primeiro eu uso realpath() pra expandir todos os symbolic links do
+ *  path recebido pelo cliente.
+ *  Se o arquivo nao existir, independentemente se ele esteja fora do
+ *  diretorio permitido como root, ele vai avisar que nao existe.
+ *  Se o arquivo existir, mas estiver fora do diretorio permitido como
+ *  root, ele vai avisar que esta fora do range.
+ *  @n
+ *  tl;dr E possivel um hacker saber quais arquivos existem fora do
+ *        diretorio root, atraves de tentativa e erro.
+ *
  *  @return 0 caso nao haja erro e -1 em algum erro
  */
 int file_check(struct clienthandler_t* h, char* rootdir, int rootdirsize)
 {
   struct stat st;
   char   errormsg[BUFFER_SIZE];
+  char   buffer[BUFFER_SIZE];
   int    errornum;
   int    retval;
 
 
-  if (realpath(h->filepath, h->filepath) == NULL)
+  if (realpath(h->filepath, buffer) == NULL)
   {
     perror("Error at realpath()");
+    switch (errno)
+    {
+    case ENOENT:
+      sprintf(h->filestatusmsg, "File Not Found");
+      h->filestatus = NOT_FOUND;
+      break;
+    case EACCES:
+      sprintf(h->filestatusmsg, "Search permission denied on this directory");
+      h->filestatus = FORBIDDEN;
+      break;
+    default:
+      break;
+    }
     return -1;
   }
+  strncpy(h->filepath, buffer, BUFFER_SIZE);
 
   if (strncmp(h->filepath, rootdir, rootdirsize) != 0)
   {
@@ -183,8 +208,6 @@ int file_check(struct clienthandler_t* h, char* rootdir, int rootdirsize)
     }
   }
 
-  // TODO TODO TODO TODO
-  // Checar por arquivo fora do range
   h->filestatus = OK;
   sprintf(h->filestatusmsg, "OK");
   h->filesize   = st.st_size;
