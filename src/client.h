@@ -33,22 +33,29 @@ struct c_handler
   char filepath[BUFFER_SIZE];    /**< Localizacao do arquivo que o cliente solicitou. */
   int  filestatus;               /**< Indica se o arquivo existe ou qual erro esta associado a ele.
                                    *  Seus valores sao os mesmos da especificacao HTTP (status codes). */
+
   char filestatusmsg[BUFFER_SIZE]; /**< Mensagem equivalente ao status do arquivo. */
+  int  filestatusmsg_size;         /**< O tamanho da mensagem de status do arquivo. */
+
   FILE* filep;                   /**< Arquivo que o cliente pede */
   int   filesize;                /**< Tamanho do arquivo solicitado*/
   int   filesentsize;            /**< Tamanho que ja foi enviado do arquivo como um todo */
   time_t filelastm;              /**< Data de ultima modificacao do arquivo */
+
   char filebuff[BUFFER_SIZE];    /**< Buffer onde serao guardadas partes temporarias do arquivo */
-  char  answer[BUFFER_SIZE];     /**< Header a ser enviado como resposta ao cliente, antes do arquivo */
-  int   answer_size;             /**< O tamanho total do header */
+  int  filebuffsize;
+
+  char answer[BUFFER_SIZE];     /**< Header a ser enviado como resposta ao cliente, antes do arquivo */
+  int  answer_size;             /**< O tamanho total do header */
 
   int size_left; /**< Quanto do arquivo (caso exista) ainda precisa ser enviado ao cliente. */
   int size_sent; /**< Quanto do arquivo (caso exista) ja foi enviado ao cliente. */
 
   char fileerror[BUFFER_SIZE]; /** Se houver algum erro relacionado ao arquivo, sua mensagem estara
                                  *  aqui (no formato de pagina HTML) para ser enviada ao cliente. */
-  int fileerrorsize; /**< Tamanho da pagina HTML de erro */
-  char *output; /**< Ponteiro que vai indicar o que vai ser enviado - o erro ou o header */
+  int fileerrorsize;           /**< Tamanho da pagina HTML de erro */
+
+  char *output;      /**< Ponteiro que vai indicar o que vai ser enviado - o erro ou o header */
 
   int need_file_chunk;           /** Flag que indica se precisa pegar um pedaco do arquivo. */
 };

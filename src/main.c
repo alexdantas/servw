@@ -13,6 +13,7 @@
 #include <netdb.h>      /* gethostbyname() send() recv()             */
 #include <sys/stat.h>   /* stat() S_ISDIR()                          */
 #include <limits.h>     /* realpath()                                */
+#include <signal.h>     /* sigaction()                               */
 
 #include "client.h"
 #include "server.h"
@@ -91,6 +92,11 @@ int find_crlf(char* where)
 }
 
 
+/** Armazena a mensagem de status HTTP equivalente ao numero 'status'
+ *  em 'buff', respeitando 'buffsize'.
+ *
+ *  @return O tamanho da string de mensagem.
+ */
 int get_http_status_msg(int status, char* buff, size_t buffsize)
 {
   switch (status)
@@ -115,10 +121,10 @@ int get_http_status_msg(int status, char* buff, size_t buffsize)
 
   default:
     strncpy(buff, "Unknown Status Code", buffsize);
-    return -1;
+    break;
   }
 
-  return 0;
+  return strlen(buff);
 }
 
 
@@ -175,6 +181,20 @@ void daemonize(FILE* logfile, char* logname, FILE* errfile, char* errlogname)
 }
 
 
+void ignore_sigpipe(int signal)
+{ }
+
+void set_signals()
+{
+    struct sigaction sa;
+
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = ignore_sigpipe;
+
+    sigaction (SIGPIPE, &sa, NULL);
+}
+
+
 int main(int argc, char *argv[])
 {
   FILE *logfile = NULL;
@@ -206,6 +226,8 @@ int main(int argc, char *argv[])
 
   /* Inicializar servidor */
   port_number = atoi(argv[1]);
+
+  set_signals();
 
   memset(rootdir, '\0', BUFFER_SIZE);
   rootdirsize = BUFFER_SIZE;
@@ -362,7 +384,7 @@ int main(int argc, char *argv[])
           else
           {
             build_error_html(handler);
-            build_header(handler);
+            handler->answer_size = build_header(handler);
             handler->output = handler->answer;
             handler->state = ERROR_HEADER_SENDING;
           }
@@ -527,27 +549,3 @@ int main(int argc, char *argv[])
   return 0;
 }
 
-/*
-
-List of nCurses Software
-
-<resumim de ncurses>
-<motivacao pessoal>
-
-Window Managers
-
-File Manager
-
-Bittorrent client
-
-Games
-
-
-
-
-
-
-
-
-
-*/

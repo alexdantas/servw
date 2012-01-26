@@ -1,8 +1,5 @@
 Coisas a fazer:
 
-Parar de tratar buffers de rede como strings (tirar strlen())
-
-
 ---
 
 

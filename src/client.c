@@ -80,7 +80,7 @@ int c_handler_init(struct c_handler** h, int sck, char* rootdir)
   (*h)->output = NULL;
   (*h)->filep  = NULL;
 
-  (*h)->answer_size = -1;
+  (*h)->answer_size = BUFFER_SIZE;
 
   strncpy((*h)->filepath, rootdir, BUFFER_SIZE);
   (*h)->filestatus = -1;
@@ -358,12 +358,32 @@ int file_check(struct c_handler* h, char* rootdir, int rootdirsize)
 }
 
 
+/** Reseta os valores 'h->size_left' e 'h->size_sent' para indicar
+ *  que vamos comecar a mandar um arquivo.
+ *
+ *  @warning A cada 'coisa' que formos enviar, temos que adicionar
+ *           aqui. Por exemplo, vamos mandar um arquivo, um header
+ *           ou uma mensagem de erro. Cada caso deve ser considerado
+ *           aqui.
+ */
 int prepare_msg_to_send(struct c_handler* h)
 {
   if (h->output == NULL)
     return -1;
 
-  h->size_left = strlen(h->output);
+
+  if (h->output == h->fileerror)
+    h->size_left = h->fileerrorsize;
+
+  else if (h->output == h->answer)
+    h->size_left = h->answer_size;
+
+  else if (h->output == h->filebuff)
+    h->size_left = h->filebuffsize;
+
+  else
+    h->size_left = strlen(h->output);
+
   h->size_sent = 0;
 
   return 0;
@@ -385,7 +405,7 @@ int keep_sending_msg(struct c_handler* h)
   {
     if ((errno != EWOULDBLOCK) && (errno != EAGAIN))
     {
-      LOG_WRITE("Erro de conexao!");
+      perror("Error at send()");
       return -1;
     }
     return -2;
@@ -443,10 +463,11 @@ int get_file_chunk(struct c_handler* h)
   memset(&(h->filebuff), '\0', BUFFER_SIZE);
   retval = fread(h->filebuff, sizeof(char), BUFFER_SIZE - 1, h->filep);
 
-  h->size_left = strlen(h->filebuff);
+  h->filebuffsize = retval;
+  h->size_left = retval;
   h->size_sent = 0;
 
-  if (retval < BUFFER_SIZE - 1)
+  if (retval < (BUFFER_SIZE - 1))
   {
     if (feof(h->filep))
       return 1;
@@ -466,12 +487,14 @@ int get_file_chunk(struct c_handler* h)
  */
 void build_error_html(struct c_handler* h)
 {
-  get_http_status_msg(h->filestatus, h->filestatusmsg, BUFFER_SIZE);
+  int size = get_http_status_msg(h->filestatus, h->filestatusmsg, BUFFER_SIZE);
+  h->filestatusmsg_size = size;
 
   snprintf(h->fileerror, BUFFER_SIZE,
-           "<html>\n<head>\n<title>Error %d</title>\n</head>\n"
-           "<body>\n<h3>Error %d - %s</h3>\n</body>\n</html>",
-           h->filestatus, h->filestatus, h->filestatusmsg);
+           "<html>\n<head>\n<title>Error %d</title>\n</head>\n<body>\n"
+           "<h3>Error %d - %s</h3>\n<hr><pre>%s</pre>"
+           "</body>\n</html>",
+           h->filestatus, h->filestatus, h->filestatusmsg, PACKAGE_NAME);
 
   h->fileerrorsize = strlen(h->fileerror);
 }
