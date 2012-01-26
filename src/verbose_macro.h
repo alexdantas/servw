@@ -7,4 +7,5 @@
 
 #define LOG_FLUSH                      fflush(stdout);
 
-#define LOG_WRITE_ERROR(a)             fprintf(stderr, a);
+#define LOG_WRITE_ERROR(a)             fprintf(stderr, a);     \
+                                       fprintf(stdout, "Erro gravado em stderr\n");

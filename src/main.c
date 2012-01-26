@@ -240,7 +240,6 @@ int main(int argc, char *argv[])
 
 
   /* Inicializar select() */
-  /* Depois garantir que (max_clients < FD_SETSIZE) */
   FD_ZERO(&readfds);
   FD_ZERO(&writefds);
   FD_ZERO(&clientfds);
@@ -250,6 +249,11 @@ int main(int argc, char *argv[])
 
   /* Inicializar clienthandlers */
   c_handler_list_init(&handler_list, MAX_CLIENTS);
+  if (handler_list.max > FD_SETSIZE)
+  {
+    LOG_WRITE_ERROR("O maximo de clientes permitido por select() e FD_SETSIZE");
+    exit(EXIT_FAILURE);
+  }
 
   LOG_WRITE("Inicializacao completa!");
 

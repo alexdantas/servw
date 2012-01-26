@@ -1,7 +1,5 @@
 Coisas a fazer:
 
-DONE	Inserir listas e tirar vetores para clienthandlers
-
 Parar de tratar buffers de rede como strings (tirar strlen())
 
 
