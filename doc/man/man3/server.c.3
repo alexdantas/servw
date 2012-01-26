@@ -1,0 +1,133 @@
+.TH "src/server.c" 3 "Quarta, 25 de Janeiro de 2012" "servw" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+src/server.c \- 
+.PP
+Implementacao das funcoes basicas para automatizar a inicializacao de um servidor inet'\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <stdio\&.h>\fP
+.br
+\fC#include <errno\&.h>\fP
+.br
+\fC#include <string\&.h>\fP
+.br
+\fC#include <unistd\&.h>\fP
+.br
+\fC#include <sys/types\&.h>\fP
+.br
+\fC#include <sys/socket\&.h>\fP
+.br
+\fC#include <arpa/inet\&.h>\fP
+.br
+\fC#include <fcntl\&.h>\fP
+.br
+\fC#include <netdb\&.h>\fP
+.br
+\fC#include 'server\&.h'\fP
+.br
+\fC#include 'verbose_macro\&.h'\fP
+.br
+
+.SS "Funções"
+
+.in +1c
+.ti -1c
+.RI "int \fBserver_start\fP (int port_number)"
+.br
+.RI "\fIEfetua todo o trabalho de iniciar o servidor'\&. \fP"
+.ti -1c
+.RI "int \fBnew_inet_socket\fP ()"
+.br
+.RI "\fICria um socket pronto voltado ao protocolo TCP/IP'\&. \fP"
+.ti -1c
+.RI "int \fBset_reusable_port\fP (int sckt)"
+.br
+.RI "\fIRemove o erro 'address already in use', permitindo que diferentes conexoes usem a mesma porta'\&. \fP"
+.ti -1c
+.RI "int \fBbind_inet_address\fP (int sckt, int port)"
+.br
+.RI "\fIInicia e efetua o bind() no endereco de um servidor para internet (segundo o protocolo TCP/IP)'\&. \fP"
+.ti -1c
+.RI "int \fBget_ip_addr\fP (char *buffer, size_t bsize, char *host_name)"
+.br
+.RI "\fIGuarda o endereco IP do host 'host_name' no 'buffer' - na notacao estilo '172'\&.0'\&.0'\&.11''\&. \fP"
+.ti -1c
+.RI "int \fBsocket_set_nonblocking\fP (int sck)"
+.br
+.RI "\fISets the socket specified to non-blocking mode'\&. \fP"
+.in -1c
+.SH "Descrição Detalhada"
+.PP 
+Implementacao das funcoes basicas para automatizar a inicializacao de um servidor inet'\&. 
+
+
+.SH "Funções"
+.PP 
+.SS "int bind_inet_address (intsckt, intport)"
+.PP
+Inicia e efetua o bind() no endereco de um servidor para internet (segundo o protocolo TCP/IP)'\&. \fBParâmetros:\fP
+.RS 4
+\fIsckt\fP O listener socket do servidor'\&. 
+.br
+\fIport\fP A porta que o servidor vai aceitar conexoes'\&.
+.RE
+.PP
+\fBRetorna:\fP
+.RS 4
+O mesmo que bind()'\&. 
+.RE
+.PP
+
+.SS "int get_ip_addr (char *buffer, size_tbsize, char *host_name)"
+.PP
+Guarda o endereco IP do host 'host_name' no 'buffer' - na notacao estilo '172'\&.0'\&.0'\&.11''\&. Escreve ate 'bsize' bytes'\&.
+.PP
+\fBRetorna:\fP
+.RS 4
+O mesmo que gethostbyname() - 0 em caso de sucesso e -1 em caso de erro'\&. 
+.RE
+.PP
+
+.SS "int new_inet_socket ()"
+.PP
+Cria um socket pronto voltado ao protocolo TCP/IP'\&. \fBRetorna:\fP
+.RS 4
+O mesmo que socket() - um socket pronto para ser usado ou -1 em caso de erro'\&. 
+.RE
+.PP
+
+.SS "int server_start (intport_number)"
+.PP
+Efetua todo o trabalho de iniciar o servidor'\&. Essa funcao age como um modelo padrao do que deve ser feito ao iniciar um servidor'\&. Pode-se usar cada uma dessas funcoes separadamente da maneira que se preferir'\&.
+.PP
+\fBObservação:\fP
+.RS 4
+O servidor vai possuir porta reusavel para outras conexoes, seu socket vai ser nao-bloqueante e vai funcionar na porta especificada'\&.
+.RE
+.PP
+\fBRetorna:\fP
+.RS 4
+Um socket pronto para conexao em sucesso, -1 em caso de erro'\&. 
+.RE
+.PP
+
+.SS "int socket_set_nonblocking (intsck)"
+.PP
+Sets the socket specified to non-blocking mode'\&. \fBFuturas Atividades\fP
+.RS 4
+Entender o que esses operadores bitwise fazem'\&. 
+.RE
+.PP
+\fBRetorna:\fP
+.RS 4
+0 on success, -1 on error (perror() is called)'\&. 
+.RE
+.PP
+
+.SH "Autor"
+.PP 
+Gerado automaticamente por Doxygen para servw a partir de seu código-fonte'\&.

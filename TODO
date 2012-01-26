@@ -1,20 +1,11 @@
-  replace:
+Coisas a fazer:
 
-    project name:    servw
-    description:     A simple web server
-    package name:    servw
-    developer name:  Alexandre Dantas
-    developer email: alex.dantas92@gmail.com
-    version:         0.5
-    date:            Dec2011
-    object files:    _OBJS_
+DONE	Inserir listas e tirar vetores para clienthandlers
 
-  edit Doxyfile
+Parar de tratar buffers de rede como strings (tirar strlen())
 
-    project name
-    javadoc autobrief
-    optimize for C
-    output directory
-    project brief
-    output language
-    input
+
+---
+
+
+Se, ao receber pedacos da request, o tamanho quegar a BUFFER_SIZE e nao encontrar CRLF, dropar o cliente

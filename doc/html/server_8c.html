@@ -1,0 +1,278 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<title>servw: Referência do Arquivo src/server.c</title>
+
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { searchBox.OnSelectItem(0); });
+</script>
+
+</head>
+<body>
+<div id="top"><!-- do not remove this div! -->
+
+
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr style="height: 56px;">
+  
+  
+  <td style="padding-left: 0.5em;">
+   <div id="projectname">servw
+   
+   </div>
+   <div id="projectbrief">A simple web server</div>
+  </td>
+  
+  
+  
+ </tr>
+ </tbody>
+</table>
+</div>
+
+<!-- Gerado por Doxygen 1.7.5 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'Busca');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>Página&#160;Principal</span></a></li>
+      <li><a href="pages.html"><span>Páginas&#160;relacionadas</span></a></li>
+      <li><a href="annotated.html"><span>Estruturas&#160;de&#160;Dados</span></a></li>
+      <li class="current"><a href="files.html"><span>Arquivos</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="Busca" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+  <div id="navrow2" class="tabs2">
+    <ul class="tablist">
+      <li><a href="files.html"><span>Lista&#160;de&#160;Arquivos</span></a></li>
+      <li><a href="globals.html"><span>Globais</span></a></li>
+    </ul>
+  </div>
+</div>
+<div class="header">
+  <div class="summary">
+<a href="#func-members">Funções</a>  </div>
+  <div class="headertitle">
+<div class="title">Referência do Arquivo src/server.c</div>  </div>
+</div>
+<div class="contents">
+
+<p>Implementacao das funcoes basicas para automatizar a inicializacao de um servidor inet.  
+<a href="#details">Mais...</a></p>
+<div class="textblock"><code>#include &lt;stdio.h&gt;</code><br/>
+<code>#include &lt;errno.h&gt;</code><br/>
+<code>#include &lt;string.h&gt;</code><br/>
+<code>#include &lt;unistd.h&gt;</code><br/>
+<code>#include &lt;sys/types.h&gt;</code><br/>
+<code>#include &lt;sys/socket.h&gt;</code><br/>
+<code>#include &lt;arpa/inet.h&gt;</code><br/>
+<code>#include &lt;fcntl.h&gt;</code><br/>
+<code>#include &lt;netdb.h&gt;</code><br/>
+<code>#include &quot;<a class="el" href="server_8h_source.html">server.h</a>&quot;</code><br/>
+<code>#include &quot;verbose_macro.h&quot;</code><br/>
+</div><table class="memberdecls">
+<tr><td colspan="2"><h2><a name="func-members"></a>
+Funções</h2></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="server_8c.html#a9a2fc4df604067c8fc179a1da0c8f533">server_start</a> (int port_number)</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Efetua todo o trabalho de iniciar o servidor.  <a href="#a9a2fc4df604067c8fc179a1da0c8f533"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="server_8c.html#a86b1837042586d037b0a509676c750d2">new_inet_socket</a> ()</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Cria um socket pronto voltado ao protocolo TCP/IP.  <a href="#a86b1837042586d037b0a509676c750d2"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a1bcbdc88f2327421a0a05742aa707090"></a><!-- doxytag: member="server.c::set_reusable_port" ref="a1bcbdc88f2327421a0a05742aa707090" args="(int sckt)" -->
+int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="server_8c.html#a1bcbdc88f2327421a0a05742aa707090">set_reusable_port</a> (int sckt)</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove o erro 'address already in use', permitindo que diferentes conexoes usem a mesma porta. <br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="server_8c.html#a3ce0858e6733bde253085184490d71eb">bind_inet_address</a> (int sckt, int port)</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Inicia e efetua o bind() no endereco de um servidor para internet (segundo o protocolo TCP/IP).  <a href="#a3ce0858e6733bde253085184490d71eb"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="server_8c.html#a224ac4e4aece13672f742963462de35b">get_ip_addr</a> (char *buffer, size_t bsize, char *host_name)</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Guarda o endereco IP do host 'host_name' no 'buffer' - na notacao estilo "172.0.0.11".  <a href="#a224ac4e4aece13672f742963462de35b"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="server_8c.html#ad0504108670e96e7a471f69f408cbc22">socket_set_nonblocking</a> (int sck)</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the socket specified to non-blocking mode.  <a href="#ad0504108670e96e7a471f69f408cbc22"></a><br/></td></tr>
+</table>
+<hr/><a name="details" id="details"></a><h2>Descrição Detalhada</h2>
+<div class="textblock"><p>Implementacao das funcoes basicas para automatizar a inicializacao de um servidor inet. </p>
+</div><hr/><h2>Funções</h2>
+<a class="anchor" id="a3ce0858e6733bde253085184490d71eb"></a><!-- doxytag: member="server.c::bind_inet_address" ref="a3ce0858e6733bde253085184490d71eb" args="(int sckt, int port)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int bind_inet_address </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>sckt</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>port</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Inicia e efetua o bind() no endereco de um servidor para internet (segundo o protocolo TCP/IP). </p>
+<dl><dt><b>Parâmetros:</b></dt><dd>
+  <table class="params">
+    <tr><td class="paramname">sckt</td><td>O listener socket do servidor. </td></tr>
+    <tr><td class="paramname">port</td><td>A porta que o servidor vai aceitar conexoes.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="return"><dt><b>Retorna:</b></dt><dd>O mesmo que bind(). </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a224ac4e4aece13672f742963462de35b"></a><!-- doxytag: member="server.c::get_ip_addr" ref="a224ac4e4aece13672f742963462de35b" args="(char *buffer, size_t bsize, char *host_name)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int get_ip_addr </td>
+          <td>(</td>
+          <td class="paramtype">char *&#160;</td>
+          <td class="paramname"><em>buffer</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>bsize</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">char *&#160;</td>
+          <td class="paramname"><em>host_name</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Guarda o endereco IP do host 'host_name' no 'buffer' - na notacao estilo "172.0.0.11". </p>
+<p>Escreve ate 'bsize' bytes.</p>
+<dl class="return"><dt><b>Retorna:</b></dt><dd>O mesmo que gethostbyname() - 0 em caso de sucesso e -1 em caso de erro. </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a86b1837042586d037b0a509676c750d2"></a><!-- doxytag: member="server.c::new_inet_socket" ref="a86b1837042586d037b0a509676c750d2" args="()" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int new_inet_socket </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Cria um socket pronto voltado ao protocolo TCP/IP. </p>
+<dl class="return"><dt><b>Retorna:</b></dt><dd>O mesmo que socket() - um socket pronto para ser usado ou -1 em caso de erro. </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a9a2fc4df604067c8fc179a1da0c8f533"></a><!-- doxytag: member="server.c::server_start" ref="a9a2fc4df604067c8fc179a1da0c8f533" args="(int port_number)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int server_start </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>port_number</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Efetua todo o trabalho de iniciar o servidor. </p>
+<p>Essa funcao age como um modelo padrao do que deve ser feito ao iniciar um servidor. Pode-se usar cada uma dessas funcoes separadamente da maneira que se preferir.</p>
+<dl class="note"><dt><b>Observação:</b></dt><dd>O servidor vai possuir porta reusavel para outras conexoes, seu socket vai ser nao-bloqueante e vai funcionar na porta especificada.</dd></dl>
+<dl class="return"><dt><b>Retorna:</b></dt><dd>Um socket pronto para conexao em sucesso, -1 em caso de erro. </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ad0504108670e96e7a471f69f408cbc22"></a><!-- doxytag: member="server.c::socket_set_nonblocking" ref="ad0504108670e96e7a471f69f408cbc22" args="(int sck)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int socket_set_nonblocking </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>sck</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Sets the socket specified to non-blocking mode. </p>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000007">Futuras Atividades:</a></b></dt><dd>Entender o que esses operadores bitwise fazem. </dd></dl>
+<dl class="return"><dt><b>Retorna:</b></dt><dd>0 on success, -1 on error (perror() is called). </dd></dl>
+
+</div>
+</div>
+</div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>Todos</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Estruturas de Dados</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Arquivos</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&#160;</span>Funções</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&#160;</span>Variáveis</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(5)"><span class="SelectionMark">&#160;</span>Enumerações</a></div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+
+
+<hr class="footer"/><address class="footer"><small>
+Gerado em Quarta, 25 de Janeiro de 2012 17:35:06 para servw por &#160;<a href="http://www.doxygen.org/index.html">
+<img class="footer" src="doxygen.png" alt="doxygen"/>
+</a> 1.7.5
+</small></address>
+
+</body>
+</html>

@@ -1,0 +1,747 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<title>servw: Referência do Arquivo src/client.h</title>
+
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { searchBox.OnSelectItem(0); });
+</script>
+
+</head>
+<body>
+<div id="top"><!-- do not remove this div! -->
+
+
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr style="height: 56px;">
+  
+  
+  <td style="padding-left: 0.5em;">
+   <div id="projectname">servw
+   
+   </div>
+   <div id="projectbrief">A simple web server</div>
+  </td>
+  
+  
+  
+ </tr>
+ </tbody>
+</table>
+</div>
+
+<!-- Gerado por Doxygen 1.7.5 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'Busca');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>Página&#160;Principal</span></a></li>
+      <li><a href="pages.html"><span>Páginas&#160;relacionadas</span></a></li>
+      <li><a href="annotated.html"><span>Estruturas&#160;de&#160;Dados</span></a></li>
+      <li class="current"><a href="files.html"><span>Arquivos</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="Busca" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+  <div id="navrow2" class="tabs2">
+    <ul class="tablist">
+      <li><a href="files.html"><span>Lista&#160;de&#160;Arquivos</span></a></li>
+      <li><a href="globals.html"><span>Globais</span></a></li>
+    </ul>
+  </div>
+</div>
+<div class="header">
+  <div class="summary">
+<a href="#nested-classes">Estruturas de Dados</a> &#124;
+<a href="#define-members">Definições e Macros</a> &#124;
+<a href="#enum-members">Enumerações</a> &#124;
+<a href="#func-members">Funções</a> &#124;
+<a href="#var-members">Variáveis</a>  </div>
+  <div class="headertitle">
+<div class="title">Referência do Arquivo src/client.h</div>  </div>
+</div>
+<div class="contents">
+
+<p>Definicao de procedimentos relacionados a servir clientes.  
+<a href="#details">Mais...</a></p>
+
+<p><a href="client_8h_source.html">Vá para o código-fonte deste arquivo.</a></p>
+<table class="memberdecls">
+<tr><td colspan="2"><h2><a name="nested-classes"></a>
+Estruturas de Dados</h2></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structc__handler__list.html">c_handler_list</a></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structclienthandler__t.html">clienthandler_t</a></td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">O responsavel por fornecer o servico ao cliente.  <a href="structclienthandler__t.html#details">Mais...</a><br/></td></tr>
+<tr><td colspan="2"><h2><a name="define-members"></a>
+Definições e Macros</h2></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a6b20d41d6252e9871430c242cb1a56e7"></a><!-- doxytag: member="client.h::BUFFER_SIZE" ref="a6b20d41d6252e9871430c242cb1a56e7" args="" -->
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>BUFFER_SIZE</b>&#160;&#160;&#160;256</td></tr>
+<tr><td colspan="2"><h2><a name="enum-members"></a>
+Enumerações</h2></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#aa19be6305a5a4485e1e70de70ed7d677">states</a> { <br/>
+&#160;&#160;<b>FINISHED</b>, 
+<b>MSG_RECEIVING</b>, 
+<b>FILE_PROCESSING</b>, 
+<b>HEADER_SENDING</b>, 
+<br/>
+&#160;&#160;<b>ERROR_HEADER_SENDING</b>, 
+<b>FILE_SENDING</b>, 
+<b>ERROR_SENDING</b>, 
+<b>MSG_RECEIVED</b>, 
+<br/>
+&#160;&#160;<b>HEADER_SENT</b>, 
+<b>ERROR_HEADER_SENT</b>, 
+<b>FILE_SENT</b>, 
+<b>ERROR_SENT</b>
+<br/>
+ }</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Todos os estados possiveis do <a class="el" href="structclienthandler__t.html" title="O responsavel por fornecer o servico ao cliente.">clienthandler_t</a>. <br/></td></tr>
+<tr><td colspan="2"><h2><a name="func-members"></a>
+Funções</h2></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#a6e03ded01aa2e7560ad6f1d4a531fcdd">c_handler_list_init</a> (struct <a class="el" href="structc__handler__list.html">c_handler_list</a> *l, int max_clients)</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Flag que indica se precisa pegar um pedaco do arquivo.  <a href="#a6e03ded01aa2e7560ad6f1d4a531fcdd"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#ab174d5d209c238f7576d8a449e298cb9">c_handler_init</a> (struct c_handler *h, int sck, char *rootdir)</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Inicializa as variaveis internas de 'h', como o cliente 'sck' e o diretorio root 'rootdir'.  <a href="#ab174d5d209c238f7576d8a449e298cb9"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#aa13ffa5cc36f7171aa0e2a7b4ed7fabf">c_handler_add</a> (struct c_handler *h, struct <a class="el" href="structc__handler__list.html">c_handler_list</a> *l)</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Adiciona 'h' a lista 'l'.  <a href="#aa13ffa5cc36f7171aa0e2a7b4ed7fabf"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#ac292abf6962c7f09db30f632b21aa11f">c_handler_remove</a> (struct c_handler *h, struct <a class="el" href="structc__handler__list.html">c_handler_list</a> *l)</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove 'h' de 'l'.  <a href="#ac292abf6962c7f09db30f632b21aa11f"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#ab3801b809e73cccfd6187e4b01d47b45">c_handler_exit</a> (struct c_handler *h)</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Libera a memoria alocada para 'h'.  <a href="#ab3801b809e73cccfd6187e4b01d47b45"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#aa66d207eaa7068cb6dc910a25732767d">receive_message</a> (struct <a class="el" href="structclienthandler__t.html">clienthandler_t</a> *h)</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Recebe a mensagem atraves de recv() de uma maneira nao-bloqueante.  <a href="#aa66d207eaa7068cb6dc910a25732767d"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#a7a1ed6b5ae8b21250e2aa559b4860f47">handler_init</a> (struct <a class="el" href="structclienthandler__t.html">clienthandler_t</a> *h, int sck, char *rootdir)</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Inicializa o <a class="el" href="structclienthandler__t.html" title="O responsavel por fornecer o servico ao cliente.">clienthandler_t</a> 'h' e associa seus servicos ao cliente representado por 'clientsckt'.  <a href="#a7a1ed6b5ae8b21250e2aa559b4860f47"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#ae7382604d8402a2275091a968798a84c">file_check</a> (struct <a class="el" href="structclienthandler__t.html">clienthandler_t</a> *h, char *rootdir, int rootdirsize)</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Checa se o arquivo descrito dentro de 'h' existe ou nao e atribui a 'h' a mensagem de erro correspondente.  <a href="#ae7382604d8402a2275091a968798a84c"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="adee363839aa01952e13f688880a4a27e"></a><!-- doxytag: member="client.h::start_sending_msg" ref="adee363839aa01952e13f688880a4a27e" args="(struct clienthandler_t *h)" -->
+int&#160;</td><td class="memItemRight" valign="bottom"><b>start_sending_msg</b> (struct <a class="el" href="structclienthandler__t.html">clienthandler_t</a> *h)</td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#ab497f7be87da1575a3ff333bd6d3e38e">keep_sending_msg</a> (struct <a class="el" href="structclienthandler__t.html">clienthandler_t</a> *h)</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Continua enviando para h-&gt;client a mensagem apontada por h-&gt;output atraves de sockets nao-bloqueantes.  <a href="#ab497f7be87da1575a3ff333bd6d3e38e"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#a4ab6c1dd3a90503c8451377a99f7ec34">start_sending_file</a> (struct <a class="el" href="structclienthandler__t.html">clienthandler_t</a> *h)</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Abre o arquivo em 'h' para ser enviado.  <a href="#a4ab6c1dd3a90503c8451377a99f7ec34"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#a4478a7db4cc6c509dee800d60d367ffa">stop_sending_file</a> (struct <a class="el" href="structclienthandler__t.html">clienthandler_t</a> *h)</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Fecha o arquivo aberto para o 'h'.  <a href="#a4478a7db4cc6c509dee800d60d367ffa"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#af1c7af2db69f3af2f81fab908676f54a">get_file_chunk</a> (struct <a class="el" href="structclienthandler__t.html">clienthandler_t</a> *h)</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Pega um pedaco do arquivo e guarda no buffer dentro de 'h'.  <a href="#af1c7af2db69f3af2f81fab908676f54a"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a64e42ddaad27d84a87591f2489a13156"></a><!-- doxytag: member="client.h::build_error_html" ref="a64e42ddaad27d84a87591f2489a13156" args="(struct clienthandler_t *h)" -->
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#a64e42ddaad27d84a87591f2489a13156">build_error_html</a> (struct <a class="el" href="structclienthandler__t.html">clienthandler_t</a> *h)</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Constroi e armazena em 'h-&gt;fileerror' uma pagina HTML contendo o erro ocorrido. <br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#ac72fa8af4570ea19e005adcabf336a71">parse_request</a> (struct <a class="el" href="structclienthandler__t.html">clienthandler_t</a> *h)</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Separa as partes uteis da request HTTP enviada pelo usuario.  <a href="#ac72fa8af4570ea19e005adcabf336a71"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#a5266eb1a812dec153baa22ba231d6766">build_header</a> (struct <a class="el" href="structclienthandler__t.html">clienthandler_t</a> *h)</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Constroi e atribui o header HTTP ao 'buf' (respeitando 'bufsize').  <a href="#a5266eb1a812dec153baa22ba231d6766"></a><br/></td></tr>
+<tr><td colspan="2"><h2><a name="var-members"></a>
+Variáveis</h2></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a64b4b47b91604aea52f82f4c53be30eb"></a><!-- doxytag: member="client.h::next" ref="a64b4b47b91604aea52f82f4c53be30eb" args="" -->
+struct <a class="el" href="structc__handler__list.html">c_handler_list</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#a64b4b47b91604aea52f82f4c53be30eb">next</a></td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Proximo handler na lista. <br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#a4bf947cca001e8ca0cd9def2b8d058c7">client</a></td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket do cliente servido.  <a href="#a4bf947cca001e8ca0cd9def2b8d058c7"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a89f234133d3efe315836311cbf21c64b"></a><!-- doxytag: member="client.h::state" ref="a89f234133d3efe315836311cbf21c64b" args="" -->
+int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#a89f234133d3efe315836311cbf21c64b">state</a></td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Estado em que se encontra o handler. <br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#ac335bc5a2e39b758609fbcffe9afb655">request</a> [BUFFER_SIZE *3]</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Toda a request HTTP solicitada pelo cliente.  <a href="#ac335bc5a2e39b758609fbcffe9afb655"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#a6b35e60d8f76c0579c20b6991faea124">request_size</a></td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Tamanho de caracteres que 'request' suporta.  <a href="#a6b35e60d8f76c0579c20b6991faea124"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#a48fe36a0f6a836dae2fad1921fa31011">filepath</a> [BUFFER_SIZE]</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Localizacao do arquivo que o cliente solicitou.  <a href="#a48fe36a0f6a836dae2fad1921fa31011"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#a6c1bfa8ca8ab99f4d6060ad595ed1c1f">filestatus</a></td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Indica se o arquivo existe ou qual erro esta associado a ele.  <a href="#a6c1bfa8ca8ab99f4d6060ad595ed1c1f"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#ab002322962a2928046c6bfb9a2369ef5">filestatusmsg</a> [BUFFER_SIZE]</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Mensagem equivalente ao status do arquivo.  <a href="#ab002322962a2928046c6bfb9a2369ef5"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a2937a41bde0307e87626b85452766f89"></a><!-- doxytag: member="client.h::filep" ref="a2937a41bde0307e87626b85452766f89" args="" -->
+FILE *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#a2937a41bde0307e87626b85452766f89">filep</a></td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Arquivo que o cliente pede. <br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ae95eb7d7fba43b6d535d7ca585cbb462"></a><!-- doxytag: member="client.h::filesize" ref="ae95eb7d7fba43b6d535d7ca585cbb462" args="" -->
+int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#ae95eb7d7fba43b6d535d7ca585cbb462">filesize</a></td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Tamanho do arquivo solicitado. <br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a98df962b4c3eff4cbc0d2dbe28803287"></a><!-- doxytag: member="client.h::filesentsize" ref="a98df962b4c3eff4cbc0d2dbe28803287" args="" -->
+int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#a98df962b4c3eff4cbc0d2dbe28803287">filesentsize</a></td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Tamanho que ja foi enviado do arquivo como um todo. <br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="afcd711474b6ce12f1240083836951c8b"></a><!-- doxytag: member="client.h::filelastm" ref="afcd711474b6ce12f1240083836951c8b" args="" -->
+time_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#afcd711474b6ce12f1240083836951c8b">filelastm</a></td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Data de ultima modificacao do arquivo. <br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a8c5486db43d6259271344bcd9fe8728c"></a><!-- doxytag: member="client.h::filebuff" ref="a8c5486db43d6259271344bcd9fe8728c" args="[BUFFER_SIZE]" -->
+char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#a8c5486db43d6259271344bcd9fe8728c">filebuff</a> [BUFFER_SIZE]</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Buffer onde serao guardadas partes temporarias do arquivo. <br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aa852d22bcf33eb1f89c19bf2effa91c2"></a><!-- doxytag: member="client.h::answer" ref="aa852d22bcf33eb1f89c19bf2effa91c2" args="[BUFFER_SIZE]" -->
+char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#aa852d22bcf33eb1f89c19bf2effa91c2">answer</a> [BUFFER_SIZE]</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Header a ser enviado como resposta ao cliente, antes do arquivo. <br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a9cffa535187d8075aa365abe6d894787"></a><!-- doxytag: member="client.h::answer_size" ref="a9cffa535187d8075aa365abe6d894787" args="" -->
+int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#a9cffa535187d8075aa365abe6d894787">answer_size</a></td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">O tamanho total do header. <br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#a8bc01e89439d07a1b549a3edfa36f679">size_left</a></td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Quanto do arquivo (caso exista) ainda precisa ser enviado ao cliente.  <a href="#a8bc01e89439d07a1b549a3edfa36f679"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#a08ae67fd0bb0b776b40701244ea532be">size_sent</a></td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Quanto do arquivo (caso exista) ja foi enviado ao cliente.  <a href="#a08ae67fd0bb0b776b40701244ea532be"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aa3b41fff682889e5466c881a2517790c"></a><!-- doxytag: member="client.h::fileerror" ref="aa3b41fff682889e5466c881a2517790c" args="[BUFFER_SIZE]" -->
+char&#160;</td><td class="memItemRight" valign="bottom"><b>fileerror</b> [BUFFER_SIZE]</td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#a887b58fe4129ef46e6bf1327d865781c">fileerrorsize</a></td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Se houver algum erro relacionado ao arquivo, sua mensagem estara aqui (no formato de pagina HTML) para ser enviada ao cliente.  <a href="#a887b58fe4129ef46e6bf1327d865781c"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a47866494eb84961e021291efbea9b569"></a><!-- doxytag: member="client.h::output" ref="a47866494eb84961e021291efbea9b569" args="" -->
+char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="client_8h.html#a47866494eb84961e021291efbea9b569">output</a></td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Ponteiro que vai indicar o que vai ser enviado - o erro ou o header. <br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ae03318208adea3247f9ddb4f3b94c1e9"></a><!-- doxytag: member="client.h::need_file_chunk" ref="ae03318208adea3247f9ddb4f3b94c1e9" args="" -->
+int&#160;</td><td class="memItemRight" valign="bottom"><b>need_file_chunk</b></td></tr>
+</table>
+<hr/><a name="details" id="details"></a><h2>Descrição Detalhada</h2>
+<div class="textblock"><p>Definicao de procedimentos relacionados a servir clientes. </p>
+</div><hr/><h2>Funções</h2>
+<a class="anchor" id="a5266eb1a812dec153baa22ba231d6766"></a><!-- doxytag: member="client.h::build_header" ref="a5266eb1a812dec153baa22ba231d6766" args="(struct clienthandler_t *h)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int build_header </td>
+          <td>(</td>
+          <td class="paramtype">struct <a class="el" href="structclienthandler__t.html">clienthandler_t</a> *&#160;</td>
+          <td class="paramname"><em>h</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Constroi e atribui o header HTTP ao 'buf' (respeitando 'bufsize'). </p>
+<p>A mensagem e construida de acordo com os parametros. </p>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000002">Futuras Atividades:</a></b></dt><dd>Remover valores arbitrarios dos buffers. </dd></dl>
+<dl class="return"><dt><b>Retorna:</b></dt><dd>O numero de caracteres efetivamente atribuidos a 'buf'. </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="aa13ffa5cc36f7171aa0e2a7b4ed7fabf"></a><!-- doxytag: member="client.h::c_handler_add" ref="aa13ffa5cc36f7171aa0e2a7b4ed7fabf" args="(struct c_handler *h, struct c_handler_list *l)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int c_handler_add </td>
+          <td>(</td>
+          <td class="paramtype">struct c_handler *&#160;</td>
+          <td class="paramname"><em>h</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">struct <a class="el" href="structc__handler__list.html">c_handler_list</a> *&#160;</td>
+          <td class="paramname"><em>l</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Adiciona 'h' a lista 'l'. </p>
+<dl class="return"><dt><b>Retorna:</b></dt><dd>0 em sucesso, -1 em caso de erro - varios casos inclusos. </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ab3801b809e73cccfd6187e4b01d47b45"></a><!-- doxytag: member="client.h::c_handler_exit" ref="ab3801b809e73cccfd6187e4b01d47b45" args="(struct c_handler *h)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void c_handler_exit </td>
+          <td>(</td>
+          <td class="paramtype">struct c_handler *&#160;</td>
+          <td class="paramname"><em>h</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Libera a memoria alocada para 'h'. </p>
+<dl class="note"><dt><b>Observação:</b></dt><dd>O valor de 'h' se torna NULL. </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ab174d5d209c238f7576d8a449e298cb9"></a><!-- doxytag: member="client.h::c_handler_init" ref="ab174d5d209c238f7576d8a449e298cb9" args="(struct c_handler *h, int sck, char *rootdir)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int c_handler_init </td>
+          <td>(</td>
+          <td class="paramtype">struct c_handler *&#160;</td>
+          <td class="paramname"><em>h</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>sck</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">char *&#160;</td>
+          <td class="paramname"><em>rootdir</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Inicializa as variaveis internas de 'h', como o cliente 'sck' e o diretorio root 'rootdir'. </p>
+<dl class="return"><dt><b>Retorna:</b></dt><dd>0 em sucesso, -1 caso 'h' seja NULL ou malloc() falhe. </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a6e03ded01aa2e7560ad6f1d4a531fcdd"></a><!-- doxytag: member="client.h::c_handler_list_init" ref="a6e03ded01aa2e7560ad6f1d4a531fcdd" args="(struct c_handler_list *l, int max_clients)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int c_handler_list_init </td>
+          <td>(</td>
+          <td class="paramtype">struct <a class="el" href="structc__handler__list.html">c_handler_list</a> *&#160;</td>
+          <td class="paramname"><em>l</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>max_clients</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Flag que indica se precisa pegar um pedaco do arquivo. </p>
+<p>Inicializa as variaveis internas de 'l', como o numero maximo de clientes suportados simultaneamente, 'max_clients'.</p>
+<dl class="return"><dt><b>Retorna:</b></dt><dd>0 em sucesso, -1 caso 'l' seja NULL. </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ac292abf6962c7f09db30f632b21aa11f"></a><!-- doxytag: member="client.h::c_handler_remove" ref="ac292abf6962c7f09db30f632b21aa11f" args="(struct c_handler *h, struct c_handler_list *l)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int c_handler_remove </td>
+          <td>(</td>
+          <td class="paramtype">struct c_handler *&#160;</td>
+          <td class="paramname"><em>h</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">struct <a class="el" href="structc__handler__list.html">c_handler_list</a> *&#160;</td>
+          <td class="paramname"><em>l</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Remove 'h' de 'l'. </p>
+<dl class="note"><dt><b>Observação:</b></dt><dd>Nao desaloca a memoria. Para isso, veja </dd></dl>
+<dl class="see"><dt><b>Veja também:</b></dt><dd><a class="el" href="client_8h.html#ab3801b809e73cccfd6187e4b01d47b45" title="Libera a memoria alocada para &#39;h&#39;.">c_handler_exit()</a></dd></dl>
+<dl class="warning"><dt><b>Aviso:</b></dt><dd>Caso l-&gt;begin seja NULL ou l-&gt;end seja NULL ou l-&gt;current seja 0, essa funcao nao continua. Entao, se algum desses for verdade mas os outros nao sejam, nunca poderemos remover - isso e um sinal para bug. tl;dr Se a lista estiver corrompida, essa funcao nao funciona.</dd></dl>
+<dl class="return"><dt><b>Retorna:</b></dt><dd>0 em sucesso, -1 em caso de erro - varios casos inclusos. </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ae7382604d8402a2275091a968798a84c"></a><!-- doxytag: member="client.h::file_check" ref="ae7382604d8402a2275091a968798a84c" args="(struct clienthandler_t *h, char *rootdir, int rootdirsize)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int file_check </td>
+          <td>(</td>
+          <td class="paramtype">struct <a class="el" href="structclienthandler__t.html">clienthandler_t</a> *&#160;</td>
+          <td class="paramname"><em>h</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">char *&#160;</td>
+          <td class="paramname"><em>rootdir</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>rootdirsize</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Checa se o arquivo descrito dentro de 'h' existe ou nao e atribui a 'h' a mensagem de erro correspondente. </p>
+<p>Primeiro eu uso realpath() pra expandir todos os symbolic links do path recebido pelo cliente. Se o arquivo nao existir, independentemente se ele esteja fora do diretorio permitido como root, ele vai avisar que nao existe. Se o arquivo existir, mas estiver fora do diretorio permitido como root, ele vai avisar que esta fora do range. <br/>
+ tl;dr E possivel um hacker saber quais arquivos existem fora do diretorio root, atraves de tentativa e erro.</p>
+<dl class="return"><dt><b>Retorna:</b></dt><dd>0 caso nao haja erro e -1 em algum erro </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="af1c7af2db69f3af2f81fab908676f54a"></a><!-- doxytag: member="client.h::get_file_chunk" ref="af1c7af2db69f3af2f81fab908676f54a" args="(struct clienthandler_t *h)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int get_file_chunk </td>
+          <td>(</td>
+          <td class="paramtype">struct <a class="el" href="structclienthandler__t.html">clienthandler_t</a> *&#160;</td>
+          <td class="paramname"><em>h</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Pega um pedaco do arquivo e guarda no buffer dentro de 'h'. </p>
+<dl class="return"><dt><b>Retorna:</b></dt><dd>0 se pegar todo o pedaco do arquivo de uma vez, 1 se o arquivo terminou de ser lido e -1 em caso de erro. </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a7a1ed6b5ae8b21250e2aa559b4860f47"></a><!-- doxytag: member="client.h::handler_init" ref="a7a1ed6b5ae8b21250e2aa559b4860f47" args="(struct clienthandler_t *h, int sck, char *rootdir)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int handler_init </td>
+          <td>(</td>
+          <td class="paramtype">struct <a class="el" href="structclienthandler__t.html">clienthandler_t</a> *&#160;</td>
+          <td class="paramname"><em>h</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>sck</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">char *&#160;</td>
+          <td class="paramname"><em>rootdir</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Inicializa o <a class="el" href="structclienthandler__t.html" title="O responsavel por fornecer o servico ao cliente.">clienthandler_t</a> 'h' e associa seus servicos ao cliente representado por 'clientsckt'. </p>
+<p>Nessa funcao utiliza-se alocacao dinamica de memoria para criar um novo <a class="el" href="structclienthandler__t.html" title="O responsavel por fornecer o servico ao cliente.">clienthandler_t</a>. </p>
+<dl class="return"><dt><b>Retorna:</b></dt><dd>0 em caso de sucesso, -1 em caso de erro ao efetuar malloc(). </dd></dl>
+<dl class="note"><dt><b>Observação:</b></dt><dd>Essa funcao supoe que o socket 'clientsckt' esta devidamente conectado ao cliente. </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ab497f7be87da1575a3ff333bd6d3e38e"></a><!-- doxytag: member="client.h::keep_sending_msg" ref="ab497f7be87da1575a3ff333bd6d3e38e" args="(struct clienthandler_t *h)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int keep_sending_msg </td>
+          <td>(</td>
+          <td class="paramtype">struct <a class="el" href="structclienthandler__t.html">clienthandler_t</a> *&#160;</td>
+          <td class="paramname"><em>h</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Continua enviando para h-&gt;client a mensagem apontada por h-&gt;output atraves de sockets nao-bloqueantes. </p>
+<dl class="return"><dt><b>Retorna:</b></dt><dd>O numero de caracteres enviados em caso de sucesso. Se houver algum erro fatal, retorna -1. Se o socket for bloquear, retorna -2. </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ac72fa8af4570ea19e005adcabf336a71"></a><!-- doxytag: member="client.h::parse_request" ref="ac72fa8af4570ea19e005adcabf336a71" args="(struct clienthandler_t *h)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int parse_request </td>
+          <td>(</td>
+          <td class="paramtype">struct <a class="el" href="structclienthandler__t.html">clienthandler_t</a> *&#160;</td>
+          <td class="paramname"><em>h</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Separa as partes uteis da request HTTP enviada pelo usuario. </p>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000001">Futuras Atividades:</a></b></dt><dd>Por enquanto so mexemos com filename. Implementar metodo e versao </dd></dl>
+<dl class="return"><dt><b>Retorna:</b></dt><dd>0 se tudo der certo, -1 caso a request contenha algum metodo nao-implementado. </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="aa66d207eaa7068cb6dc910a25732767d"></a><!-- doxytag: member="client.h::receive_message" ref="aa66d207eaa7068cb6dc910a25732767d" args="(struct clienthandler_t *h)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int receive_message </td>
+          <td>(</td>
+          <td class="paramtype">struct <a class="el" href="structclienthandler__t.html">clienthandler_t</a> *&#160;</td>
+          <td class="paramname"><em>h</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Recebe a mensagem atraves de recv() de uma maneira nao-bloqueante. </p>
+<dl class="return"><dt><b>Retorna:</b></dt><dd>0 caso a mensagem esteja sendo recebida, -1 em caso de erro e 1 se a mensagem terminou de ser recebida. </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a4ab6c1dd3a90503c8451377a99f7ec34"></a><!-- doxytag: member="client.h::start_sending_file" ref="a4ab6c1dd3a90503c8451377a99f7ec34" args="(struct clienthandler_t *h)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int start_sending_file </td>
+          <td>(</td>
+          <td class="paramtype">struct <a class="el" href="structclienthandler__t.html">clienthandler_t</a> *&#160;</td>
+          <td class="paramname"><em>h</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Abre o arquivo em 'h' para ser enviado. </p>
+<dl class="return"><dt><b>Retorna:</b></dt><dd>0 em sucesso, -1 em caso de erro. </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a4478a7db4cc6c509dee800d60d367ffa"></a><!-- doxytag: member="client.h::stop_sending_file" ref="a4478a7db4cc6c509dee800d60d367ffa" args="(struct clienthandler_t *h)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int stop_sending_file </td>
+          <td>(</td>
+          <td class="paramtype">struct <a class="el" href="structclienthandler__t.html">clienthandler_t</a> *&#160;</td>
+          <td class="paramname"><em>h</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Fecha o arquivo aberto para o 'h'. </p>
+<dl class="return"><dt><b>Retorna:</b></dt><dd>0 em sucesso e -1 em caso de erro. </dd></dl>
+
+</div>
+</div>
+<hr/><h2>Variáveis</h2>
+<a class="anchor" id="a4bf947cca001e8ca0cd9def2b8d058c7"></a><!-- doxytag: member="client.h::client" ref="a4bf947cca001e8ca0cd9def2b8d058c7" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int <a class="el" href="client_8h.html#a4bf947cca001e8ca0cd9def2b8d058c7">client</a></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Socket do cliente servido. </p>
+
+</div>
+</div>
+<a class="anchor" id="a887b58fe4129ef46e6bf1327d865781c"></a><!-- doxytag: member="client.h::fileerrorsize" ref="a887b58fe4129ef46e6bf1327d865781c" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int <a class="el" href="client_8h.html#a887b58fe4129ef46e6bf1327d865781c">fileerrorsize</a></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Se houver algum erro relacionado ao arquivo, sua mensagem estara aqui (no formato de pagina HTML) para ser enviada ao cliente. </p>
+<p>Tamanho da pagina HTML de erro </p>
+
+</div>
+</div>
+<a class="anchor" id="a48fe36a0f6a836dae2fad1921fa31011"></a><!-- doxytag: member="client.h::filepath" ref="a48fe36a0f6a836dae2fad1921fa31011" args="[BUFFER_SIZE]" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">char <a class="el" href="client_8h.html#a48fe36a0f6a836dae2fad1921fa31011">filepath</a>[BUFFER_SIZE]</td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Localizacao do arquivo que o cliente solicitou. </p>
+
+</div>
+</div>
+<a class="anchor" id="a6c1bfa8ca8ab99f4d6060ad595ed1c1f"></a><!-- doxytag: member="client.h::filestatus" ref="a6c1bfa8ca8ab99f4d6060ad595ed1c1f" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int <a class="el" href="client_8h.html#a6c1bfa8ca8ab99f4d6060ad595ed1c1f">filestatus</a></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Indica se o arquivo existe ou qual erro esta associado a ele. </p>
+<p>Seus valores sao os mesmos da especificacao HTTP (status codes). </p>
+
+</div>
+</div>
+<a class="anchor" id="ab002322962a2928046c6bfb9a2369ef5"></a><!-- doxytag: member="client.h::filestatusmsg" ref="ab002322962a2928046c6bfb9a2369ef5" args="[BUFFER_SIZE]" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">char <a class="el" href="client_8h.html#ab002322962a2928046c6bfb9a2369ef5">filestatusmsg</a>[BUFFER_SIZE]</td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Mensagem equivalente ao status do arquivo. </p>
+
+</div>
+</div>
+<a class="anchor" id="ac335bc5a2e39b758609fbcffe9afb655"></a><!-- doxytag: member="client.h::request" ref="ac335bc5a2e39b758609fbcffe9afb655" args="[BUFFER_SIZE *3]" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">char <a class="el" href="client_8h.html#ac335bc5a2e39b758609fbcffe9afb655">request</a>[BUFFER_SIZE *3]</td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Toda a request HTTP solicitada pelo cliente. </p>
+
+</div>
+</div>
+<a class="anchor" id="a6b35e60d8f76c0579c20b6991faea124"></a><!-- doxytag: member="client.h::request_size" ref="a6b35e60d8f76c0579c20b6991faea124" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int <a class="el" href="client_8h.html#a6b35e60d8f76c0579c20b6991faea124">request_size</a></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Tamanho de caracteres que 'request' suporta. </p>
+
+</div>
+</div>
+<a class="anchor" id="a8bc01e89439d07a1b549a3edfa36f679"></a><!-- doxytag: member="client.h::size_left" ref="a8bc01e89439d07a1b549a3edfa36f679" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int <a class="el" href="client_8h.html#a8bc01e89439d07a1b549a3edfa36f679">size_left</a></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Quanto do arquivo (caso exista) ainda precisa ser enviado ao cliente. </p>
+
+</div>
+</div>
+<a class="anchor" id="a08ae67fd0bb0b776b40701244ea532be"></a><!-- doxytag: member="client.h::size_sent" ref="a08ae67fd0bb0b776b40701244ea532be" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int <a class="el" href="client_8h.html#a08ae67fd0bb0b776b40701244ea532be">size_sent</a></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Quanto do arquivo (caso exista) ja foi enviado ao cliente. </p>
+
+</div>
+</div>
+</div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>Todos</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Estruturas de Dados</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Arquivos</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&#160;</span>Funções</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&#160;</span>Variáveis</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(5)"><span class="SelectionMark">&#160;</span>Enumerações</a></div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+
+
+<hr class="footer"/><address class="footer"><small>
+Gerado em Quarta, 25 de Janeiro de 2012 17:35:06 para servw por &#160;<a href="http://www.doxygen.org/index.html">
+<img class="footer" src="doxygen.png" alt="doxygen"/>
+</a> 1.7.5
+</small></address>
+
+</body>
+</html>

@@ -24,12 +24,190 @@
 
 #define PACKAGE_NAME PACKAGE"/"VERSION
 
+
+/** Inicializa as variaveis internas de 'l', como o numero maximo
+ *  de clientes suportados simultaneamente, 'max_clients'.
+ *
+ *  @return 0 em sucesso, -1 caso 'l' seja NULL.
+ */
+int c_handler_list_init(struct c_handler_list* l, int max_clients)
+{
+    if (l == NULL)
+      return -1;
+
+    l->current = 0;
+    l->max     = max_clients;
+    l->begin   = NULL;
+    l->end     = NULL;
+
+    return 0;
+}
+
+
+/** Inicializa as variaveis internas de 'h', como o cliente 'sck' e o
+ *  diretorio root 'rootdir'.
+ *
+ *  Nessa funcao utiliza-se alocacao dinamica de memoria para criar um
+ *  novo c_handler.
+ *
+ * @note Essa funcao supoe que o socket 'clientsckt' esta devidamente
+ *        conectado ao cliente.
+ *
+ *  @todo Colocar o malloc() na main e deixar essa funcao mais simples.
+ *
+ *  @return 0 em sucesso, -1 caso 'h' seja NULL ou malloc() falhe.
+ */
+int c_handler_init(struct c_handler** h, int sck, char* rootdir)
+{
+  if ((h == NULL) || (*h != NULL))
+    return -1;
+
+  *h = malloc(sizeof(struct c_handler));
+  if (*h == NULL)
+    return -1;
+
+  (*h)->next = NULL;
+  (*h)->client = sck;
+  (*h)->state = MSG_RECEIVING;
+
+  memset(&((*h)->request),       '\0', BUFFER_SIZE);
+  memset(&((*h)->answer),        '\0', BUFFER_SIZE);
+  memset(&((*h)->fileerror),     '\0', BUFFER_SIZE);
+  memset(&((*h)->filepath),      '\0', BUFFER_SIZE);
+  memset(&((*h)->filestatusmsg), '\0', BUFFER_SIZE);
+
+  (*h)->request_size = BUFFER_SIZE * 3;
+  (*h)->output = NULL;
+  (*h)->filep  = NULL;
+
+  (*h)->answer_size = -1;
+
+  strncpy((*h)->filepath, rootdir, BUFFER_SIZE);
+  (*h)->filestatus = -1;
+  (*h)->filesize   = -1;
+
+  return 0;
+}
+
+
+/** Adiciona 'h' a lista 'l'.
+ *
+ *  @return 0 em sucesso, -1 em caso de erro - varios casos inclusos.
+ */
+int c_handler_add(struct c_handler* h, struct c_handler_list* l)
+{
+  if ((h == NULL) || (l == NULL))
+    return -1;
+
+  if (l->current == l->max)
+    return -1;
+
+  if (l->begin == NULL)
+  {
+    l->begin = h;
+    l->end   = h;
+  }
+  else
+  {
+    struct c_handler* tmp = l->begin;
+
+    while (tmp->next != NULL)
+      tmp = tmp->next;
+
+    tmp->next = h;
+    l->end    = h;
+  }
+
+  l->current++;
+  return 0;
+}
+
+
+/** Remove 'h' de 'l'.
+ *
+ *  @note Nao desaloca a memoria. Para isso, veja @see c_handler_exit()
+ *
+ *  @warning
+ *  Caso l->begin seja NULL ou l->end seja NULL ou l->current seja 0,
+ *  essa funcao nao continua. Entao, se algum desses for verdade mas
+ *  os outros nao sejam, nunca poderemos remover - isso e um sinal para
+ *  bug.
+ *  tl;dr Se a lista estiver corrompida, essa funcao nao funciona.
+ *
+ *  @return 0 em sucesso, -1 em caso de erro - varios casos inclusos.
+ */
+int c_handler_remove(struct c_handler* h, struct c_handler_list* l)
+{
+  struct c_handler* tmp = NULL;
+  int exists = 0;
+
+  if ((h == NULL) || (l == NULL))
+    return -1;
+
+  if ((l->begin == NULL) || (l->end == NULL) || (l->current == 0))
+    return -1;
+
+  //checar se h esta realmente em l
+  tmp = l->begin;
+  do {
+    if (tmp == h)
+      exists = 1;
+    tmp = tmp->next;
+  } while ((exists == 0) && (tmp != NULL));
+
+  if (exists == 0)
+    return -1;
+
+  //efetivamente remover
+  if (l->begin == h)
+  {
+    if (h->next == NULL)
+      l->end = NULL;
+
+    l->begin = h->next;
+    h->next = NULL;
+  }
+  else if (l->end == h)
+  {
+    tmp = l->begin;
+
+    while (tmp->next != h)
+      tmp = tmp->next;
+
+    l->end = tmp;
+    tmp->next = NULL;
+  }
+  else
+  {
+    while (tmp->next != h)
+      tmp = tmp->next;
+
+    tmp->next = h->next;
+    h->next = NULL;
+  }
+
+  l->current--;
+  return 0;
+}
+
+
+/** Libera a memoria alocada para 'h'.
+ *
+ *  @note O valor de 'h' se torna NULL.
+ */
+void c_handler_exit(struct c_handler* h)
+{
+  free(h);
+  h = NULL;
+}
+
+
 /** Recebe a mensagem atraves de recv() de uma maneira nao-bloqueante
  *
  *  @return 0 caso a mensagem esteja sendo recebida, -1 em caso de erro
  *          e 1 se a mensagem terminou de ser recebida.
  */
-int receive_message(struct clienthandler_t* h)
+int receive_message(struct c_handler* h)
 {
   char buffer[BUFFER_SIZE];
   int  buffer_size = BUFFER_SIZE;
@@ -50,43 +228,6 @@ int receive_message(struct clienthandler_t* h)
 }
 
 
-/** Inicializa o clienthandler_t 'h' e associa seus servicos ao cliente
- *  representado por 'clientsckt'.
- *
- *  Nessa funcao utiliza-se alocacao dinamica de memoria para criar um
- *  novo clienthandler_t.
- *  @return 0 em caso de sucesso, -1 em caso de erro ao efetuar malloc().
- *  @note Essa funcao supoe que o socket 'clientsckt' esta devidamente
- *        conectado ao cliente.
- */
-int handler_init(struct clienthandler_t* h, int sck, char* rootdir)
-{
-  if (h == NULL)
-    return -1;
-
-  h->client = sck;
-  h->state = MSG_RECEIVING;
-
-  memset(&(h->request),       '\0', BUFFER_SIZE);
-  memset(&(h->answer),        '\0', BUFFER_SIZE);
-  memset(&(h->fileerror),     '\0', BUFFER_SIZE);
-  memset(&(h->filepath),      '\0', BUFFER_SIZE);
-  memset(&(h->filestatusmsg), '\0', BUFFER_SIZE);
-
-  h->request_size = BUFFER_SIZE * 3;
-  h->output = NULL;
-  h->filep  = NULL;
-
-  h->answer_size = -1;
-
-  strncpy(h->filepath, rootdir, BUFFER_SIZE);
-  h->filestatus = -1;
-  h->filesize   = -1;
-
-  return 0;
-}
-
-
 /** Checa se o arquivo descrito dentro de 'h' existe ou nao e atribui
  *  a 'h' a mensagem de erro correspondente.
  *
@@ -102,7 +243,7 @@ int handler_init(struct clienthandler_t* h, int sck, char* rootdir)
  *
  *  @return 0 caso nao haja erro e -1 em algum erro
  */
-int file_check(struct clienthandler_t* h, char* rootdir, int rootdirsize)
+int file_check(struct c_handler* h, char* rootdir, int rootdirsize)
 {
   struct stat st;
   char   errormsg[BUFFER_SIZE];
@@ -217,7 +358,7 @@ int file_check(struct clienthandler_t* h, char* rootdir, int rootdirsize)
 }
 
 
-int start_sending_msg(struct clienthandler_t* h)
+int prepare_msg_to_send(struct c_handler* h)
 {
   if (h->output == NULL)
     return -1;
@@ -236,7 +377,7 @@ int start_sending_msg(struct clienthandler_t* h)
  *          Se houver algum erro fatal, retorna -1. Se o socket for
  *          bloquear, retorna -2.
  */
-int keep_sending_msg(struct clienthandler_t* h)
+int keep_sending_msg(struct c_handler* h)
 {
   int retval = send(h->client, h->output + h->size_sent, h->size_left, 0);
 
@@ -263,7 +404,7 @@ int keep_sending_msg(struct clienthandler_t* h)
  *
  *  @return 0 em sucesso, -1 em caso de erro.
  */
-int start_sending_file(struct clienthandler_t* h)
+int start_sending_file(struct c_handler* h)
 {
   h->filep = fopen(h->filepath, "r");
   if (h->filep == NULL)
@@ -277,7 +418,7 @@ int start_sending_file(struct clienthandler_t* h)
  *
  *  @return 0 em sucesso e -1 em caso de erro.
  */
-int stop_sending_file(struct clienthandler_t* h)
+int stop_sending_file(struct c_handler* h)
 {
   int retval = fclose(h->filep);
   if (retval == EOF)
@@ -292,7 +433,7 @@ int stop_sending_file(struct clienthandler_t* h)
  *  @return 0 se pegar todo o pedaco do arquivo de uma vez, 1 se o arquivo
  *          terminou de ser lido e -1 em caso de erro.
  */
-int get_file_chunk(struct clienthandler_t* h)
+int get_file_chunk(struct c_handler* h)
 {
   int retval;
 
@@ -323,7 +464,7 @@ int get_file_chunk(struct clienthandler_t* h)
 /** Constroi e armazena em 'h->fileerror' uma pagina HTML contendo
  *  o erro ocorrido.
  */
-void build_error_html(struct clienthandler_t* h)
+void build_error_html(struct c_handler* h)
 {
   get_http_status_msg(h->filestatus, h->filestatusmsg, BUFFER_SIZE);
 
@@ -342,7 +483,7 @@ void build_error_html(struct clienthandler_t* h)
  *  @return 0 se tudo der certo, -1 caso a request contenha algum metodo
  *          nao-implementado.
  */
-int parse_request(struct clienthandler_t* h)
+int parse_request(struct c_handler* h)
 {
   char buff[BUFFER_SIZE];
   char *method;
@@ -373,7 +514,7 @@ int parse_request(struct clienthandler_t* h)
  *  @todo Remover valores arbitrarios dos buffers.
  *  @return O numero de caracteres efetivamente atribuidos a 'buf'.
  */
-int build_header(struct clienthandler_t* h)
+int build_header(struct c_handler* h)
 {
   int n;
 

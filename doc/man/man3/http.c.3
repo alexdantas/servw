@@ -1,0 +1,137 @@
+.TH "src/http.c" 3 "Quarta, 25 de Janeiro de 2012" "servw" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+src/http.c \- 
+.PP
+Implementacao dos procedimentos relacionados a parsear HTTP'\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+\fC#include 'http\&.h'\fP
+.br
+\fC#include <string\&.h>\fP
+.br
+\fC#include <ctype\&.h>\fP
+.br
+
+.SS "Estruturas de Dados"
+
+.in +1c
+.ti -1c
+.RI "struct \fBhttpparser_t\fP"
+.br
+.ti -1c
+.RI "struct \fBheaders_t\fP"
+.br
+.in -1c
+.SS "Definições e Macros"
+
+.in +1c
+.ti -1c
+.RI "#define \fBPROTOCOL\fP   'HTTP/1\&.0'"
+.br
+.in -1c
+.SS "Funções"
+
+.in +1c
+.ti -1c
+.RI "int \fBbuild_header\fP (char *buf, size_t bufsize, int status, char *status_msg char *cont_type, off_t cont_length, char *last_modif)"
+.br
+.RI "\fIConstroi e atribui o header HTTP ao 'buf' (respeitando 'bufsize')'\&. \fP"
+.ti -1c
+.RI "int \fBbuild_error\fP (char *buf, size_t bufsize, int status)"
+.br
+.RI "\fIAtribui ao 'buf' a resposta em HTML para o erro 'status' (respeitando 'bufsize');'\&. \fP"
+.ti -1c
+.RI "int \fBget_filename\fP (char *header, char *buf, size_t bufsize)"
+.br
+.RI "\fIProcessa 'header', armazena o nome RELATIVO do arquivo em 'buf' (limitado por 'bufsize') e retorna se o 'header' esta incompleto ou nao'\&. \fP"
+.ti -1c
+.RI "int \fBis_get_method\fP (char *header)"
+.br
+.RI "\fIIndica se o metodo 'GET' esta presente em 'header''\&. \fP"
+.ti -1c
+.RI "int \fBis_error_status\fP (int status)"
+.br
+.RI "\fIDiz se o numero de status 'status' e um aviso de erro'\&. \fP"
+.ti -1c
+.RI "int \fBget_status_msg\fP (int status, char *buf, size_t bufsize)"
+.br
+.RI "\fIAtribui a mensagem de status correspondente ao 'status' em 'buf' (respeitando 'bufsize')'\&. \fP"
+.in -1c
+.SH "Descrição Detalhada"
+.PP 
+Implementacao dos procedimentos relacionados a parsear HTTP'\&. 
+
+Por ora, criei um parser extremamente simples, para parsear e construir mensagens HTTP de uma forma bem restrita'\&. 
+.PP
+\fBFuturas Atividades\fP
+.RS 4
+Tornar o parser mais generalizado'\&. (MUITO TRABALHO) 
+.RE
+.PP
+
+.SH "Funções"
+.PP 
+.SS "int build_header (char *buf, size_tbufsize, intstatus, char *status_msg char *cont_type, off_tcont_length, char *last_modif)"
+.PP
+Constroi e atribui o header HTTP ao 'buf' (respeitando 'bufsize')'\&. A mensagem e construida de acordo com os parametros'\&. 
+.PP
+\fBFuturas Atividades\fP
+.RS 4
+Remover valores arbitrarios dos buffers'\&. 
+.RE
+.PP
+\fBRetorna:\fP
+.RS 4
+O numero de caracteres efetivamente atribuidos a 'buf''\&. 
+.RE
+.PP
+
+.SS "int get_filename (char *header, char *buf, size_tbufsize)"
+.PP
+Processa 'header', armazena o nome RELATIVO do arquivo em 'buf' (limitado por 'bufsize') e retorna se o 'header' esta incompleto ou nao'\&. \fBRetorna:\fP
+.RS 4
+Quantos caracteres foram efetivamente copiados para 'buf' em caso de sucesso; -1 em caso de header/buffer com erros'\&. 
+.RE
+.PP
+\fBAviso:\fP
+.RS 4
+O unico metodo suportado e GET'\&. 
+.RE
+.PP
+
+.SS "int get_status_msg (intstatus, char *buf, size_tbufsize)"
+.PP
+Atribui a mensagem de status correspondente ao 'status' em 'buf' (respeitando 'bufsize')'\&. \fBRetorna:\fP
+.RS 4
+O numero de caracteres escritos em 'buf' e -1 em caso de erros'\&. 
+.RE
+.PP
+\fBFuturas Atividades\fP
+.RS 4
+adicionar suporte a mais mensagens de erro! 
+.RE
+.PP
+
+.SS "int is_error_status (intstatus)"
+.PP
+Diz se o numero de status 'status' e um aviso de erro'\&. \fBRetorna:\fP
+.RS 4
+1 se for caso de erro, 0 se for um status normal'\&. 
+.RE
+.PP
+
+.SS "int is_get_method (char *header)"
+.PP
+Indica se o metodo 'GET' esta presente em 'header''\&. \fBRetorna:\fP
+.RS 4
+Nao-zero se o metodo 'GET' esta presente, 0 se nao esta'\&. 
+.RE
+.PP
+
+.SH "Autor"
+.PP 
+Gerado automaticamente por Doxygen para servw a partir de seu código-fonte'\&.

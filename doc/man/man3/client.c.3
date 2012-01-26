@@ -1,0 +1,204 @@
+.TH "src/client.c" 3 "Quarta, 25 de Janeiro de 2012" "servw" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+src/client.c \- 
+.PP
+Implementacao das funcoes relacionadas ao clienthandler'\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <stdio\&.h>\fP
+.br
+\fC#include <stdlib\&.h>\fP
+.br
+\fC#include <string\&.h>\fP
+.br
+\fC#include <errno\&.h>\fP
+.br
+\fC#include <unistd\&.h>\fP
+.br
+\fC#include <fcntl\&.h>\fP
+.br
+\fC#include <netdb\&.h>\fP
+.br
+\fC#include <sys/stat\&.h>\fP
+.br
+\fC#include <limits\&.h>\fP
+.br
+\fC#include 'client\&.h'\fP
+.br
+\fC#include 'http\&.h'\fP
+.br
+\fC#include 'verbose_macro\&.h'\fP
+.br
+
+.SS "Definições e Macros"
+
+.in +1c
+.ti -1c
+.RI "#define \fBH_ANSWER\fP   0"
+.br
+.ti -1c
+.RI "#define \fBH_ERROR\fP   1"
+.br
+.ti -1c
+.RI "#define \fBPROTOCOL\fP   'HTTP/1\&.0'"
+.br
+.ti -1c
+.RI "#define \fBPACKAGE_NAME\fP   PACKAGE'/'VERSION"
+.br
+.in -1c
+.SS "Funções"
+
+.in +1c
+.ti -1c
+.RI "int \fBreceive_message\fP (struct \fBclienthandler_t\fP *h)"
+.br
+.RI "\fIRecebe a mensagem atraves de recv() de uma maneira nao-bloqueante'\&. \fP"
+.ti -1c
+.RI "int \fBhandler_init\fP (struct \fBclienthandler_t\fP *h, int sck, char *rootdir)"
+.br
+.RI "\fIInicializa o \fBclienthandler_t\fP 'h' e associa seus servicos ao cliente representado por 'clientsckt''\&. \fP"
+.ti -1c
+.RI "int \fBfile_check\fP (struct \fBclienthandler_t\fP *h, char *rootdir, int rootdirsize)"
+.br
+.RI "\fICheca se o arquivo descrito dentro de 'h' existe ou nao e atribui a 'h' a mensagem de erro correspondente'\&. \fP"
+.ti -1c
+.RI "int \fBstart_sending_msg\fP (struct \fBclienthandler_t\fP *h)"
+.br
+.ti -1c
+.RI "int \fBkeep_sending_msg\fP (struct \fBclienthandler_t\fP *h)"
+.br
+.RI "\fIContinua enviando para h->client a mensagem apontada por h->output atraves de sockets nao-bloqueantes'\&. \fP"
+.ti -1c
+.RI "int \fBstart_sending_file\fP (struct \fBclienthandler_t\fP *h)"
+.br
+.RI "\fIAbre o arquivo em 'h' para ser enviado'\&. \fP"
+.ti -1c
+.RI "int \fBstop_sending_file\fP (struct \fBclienthandler_t\fP *h)"
+.br
+.RI "\fIFecha o arquivo aberto para o 'h''\&. \fP"
+.ti -1c
+.RI "int \fBget_file_chunk\fP (struct \fBclienthandler_t\fP *h)"
+.br
+.RI "\fIPega um pedaco do arquivo e guarda no buffer dentro de 'h''\&. \fP"
+.ti -1c
+.RI "void \fBbuild_error_html\fP (struct \fBclienthandler_t\fP *h)"
+.br
+.RI "\fIConstroi e armazena em 'h->fileerror' uma pagina HTML contendo o erro ocorrido'\&. \fP"
+.ti -1c
+.RI "int \fBparse_request\fP (struct \fBclienthandler_t\fP *h)"
+.br
+.RI "\fISepara as partes uteis da request HTTP enviada pelo usuario'\&. \fP"
+.ti -1c
+.RI "int \fBbuild_header\fP (struct \fBclienthandler_t\fP *h)"
+.br
+.RI "\fIConstroi e atribui o header HTTP ao 'buf' (respeitando 'bufsize')'\&. \fP"
+.in -1c
+.SH "Descrição Detalhada"
+.PP 
+Implementacao das funcoes relacionadas ao clienthandler'\&. 
+
+
+.SH "Funções"
+.PP 
+.SS "int build_header (struct \fBclienthandler_t\fP *h)"
+.PP
+Constroi e atribui o header HTTP ao 'buf' (respeitando 'bufsize')'\&. A mensagem e construida de acordo com os parametros'\&. 
+.PP
+\fBFuturas Atividades\fP
+.RS 4
+Remover valores arbitrarios dos buffers'\&. 
+.RE
+.PP
+\fBRetorna:\fP
+.RS 4
+O numero de caracteres efetivamente atribuidos a 'buf''\&. 
+.RE
+.PP
+
+.SS "int file_check (struct \fBclienthandler_t\fP *h, char *rootdir, introotdirsize)"
+.PP
+Checa se o arquivo descrito dentro de 'h' existe ou nao e atribui a 'h' a mensagem de erro correspondente'\&. Primeiro eu uso realpath() pra expandir todos os symbolic links do path recebido pelo cliente'\&. Se o arquivo nao existir, independentemente se ele esteja fora do diretorio permitido como root, ele vai avisar que nao existe'\&. Se o arquivo existir, mas estiver fora do diretorio permitido como root, ele vai avisar que esta fora do range'\&. 
+.br
+ tl;dr E possivel um hacker saber quais arquivos existem fora do diretorio root, atraves de tentativa e erro'\&.
+.PP
+\fBRetorna:\fP
+.RS 4
+0 caso nao haja erro e -1 em algum erro 
+.RE
+.PP
+
+.SS "int get_file_chunk (struct \fBclienthandler_t\fP *h)"
+.PP
+Pega um pedaco do arquivo e guarda no buffer dentro de 'h''\&. \fBRetorna:\fP
+.RS 4
+0 se pegar todo o pedaco do arquivo de uma vez, 1 se o arquivo terminou de ser lido e -1 em caso de erro'\&. 
+.RE
+.PP
+
+.SS "int handler_init (struct \fBclienthandler_t\fP *h, intsck, char *rootdir)"
+.PP
+Inicializa o \fBclienthandler_t\fP 'h' e associa seus servicos ao cliente representado por 'clientsckt''\&. Nessa funcao utiliza-se alocacao dinamica de memoria para criar um novo \fBclienthandler_t\fP'\&. 
+.PP
+\fBRetorna:\fP
+.RS 4
+0 em caso de sucesso, -1 em caso de erro ao efetuar malloc()'\&. 
+.RE
+.PP
+\fBObservação:\fP
+.RS 4
+Essa funcao supoe que o socket 'clientsckt' esta devidamente conectado ao cliente'\&. 
+.RE
+.PP
+
+.SS "int keep_sending_msg (struct \fBclienthandler_t\fP *h)"
+.PP
+Continua enviando para h->client a mensagem apontada por h->output atraves de sockets nao-bloqueantes'\&. \fBRetorna:\fP
+.RS 4
+O numero de caracteres enviados em caso de sucesso'\&. Se houver algum erro fatal, retorna -1'\&. Se o socket for bloquear, retorna -2'\&. 
+.RE
+.PP
+
+.SS "int parse_request (struct \fBclienthandler_t\fP *h)"
+.PP
+Separa as partes uteis da request HTTP enviada pelo usuario'\&. \fBFuturas Atividades\fP
+.RS 4
+Por enquanto so mexemos com filename'\&. Implementar metodo e versao 
+.RE
+.PP
+\fBRetorna:\fP
+.RS 4
+0 se tudo der certo, -1 caso a request contenha algum metodo nao-implementado'\&. 
+.RE
+.PP
+
+.SS "int receive_message (struct \fBclienthandler_t\fP *h)"
+.PP
+Recebe a mensagem atraves de recv() de uma maneira nao-bloqueante'\&. \fBRetorna:\fP
+.RS 4
+0 caso a mensagem esteja sendo recebida, -1 em caso de erro e 1 se a mensagem terminou de ser recebida'\&. 
+.RE
+.PP
+
+.SS "int start_sending_file (struct \fBclienthandler_t\fP *h)"
+.PP
+Abre o arquivo em 'h' para ser enviado'\&. \fBRetorna:\fP
+.RS 4
+0 em sucesso, -1 em caso de erro'\&. 
+.RE
+.PP
+
+.SS "int stop_sending_file (struct \fBclienthandler_t\fP *h)"
+.PP
+Fecha o arquivo aberto para o 'h''\&. \fBRetorna:\fP
+.RS 4
+0 em sucesso e -1 em caso de erro'\&. 
+.RE
+.PP
+
+.SH "Autor"
+.PP 
+Gerado automaticamente por Doxygen para servw a partir de seu código-fonte'\&.
