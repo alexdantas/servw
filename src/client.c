@@ -152,12 +152,14 @@ int c_handler_remove(struct c_handler* h, struct c_handler_list* l)
   do {
     if (tmp == h)
       exists = 1;
+
     tmp = tmp->next;
   } while ((exists == 0) && (tmp != NULL));
 
   if (exists == 0)
     return -1;
 
+  tmp = l->begin;
   //efetivamente remover
   if (l->begin == h)
   {
@@ -213,6 +215,7 @@ int receive_message(struct c_handler* h)
   int  buffer_size = BUFFER_SIZE;
   int  retval;
 
+  usleep(200000);
   retval = recv(h->client, buffer, buffer_size, 0);
   if (retval == -1)
     if ((errno != EWOULDBLOCK) && (errno != EAGAIN))

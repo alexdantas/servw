@@ -24,7 +24,8 @@
 #define BUFFER_SIZE  256
 
 
-
+/** Guarda o numero de clientes servidos no total */
+int total_clients = 0;
 
 /** Lida com os argumentos passados pela linha de comando: port 'port number'
  *  e 'root directory'.
@@ -314,6 +315,7 @@ int main(int argc, char *argv[])
               maxfds = bigger(new_client, maxfds);
               FD_SET(new_client, &clientfds);
               LOG_WRITE("Nova conexao de cliente aceita!");
+              total_clients++;
             }
           }
         } /** @todo limpar isso, esta muito feio */
@@ -531,6 +533,7 @@ int main(int argc, char *argv[])
           handler = handler_list.begin;
 
           LOG_WRITE("Cliente desconectou\n");
+          printf("%d clientes servidos ate agora\n", total_clients);
           break;
 
         default:
