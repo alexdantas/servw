@@ -64,9 +64,12 @@ CC        = gcc
 EXEC      = $(PACKAGE)
 CDEBUG    =
 CFLAGS    = $(CDEBUG) -Wall -Wextra -O2
-LINKFLAGS = 
-LIBS      = 
-OBJ       = $(LOBJ)/server.o $(LOBJ)/main.o $(LOBJ)/client.o
+LDFLAGS   = 
+LIBS      = -lrt
+OBJ       = $(LOBJ)/server.o \
+            $(LOBJ)/main.o   \
+            $(LOBJ)/client.o \
+             $(LOBJ)/timer.o
 DEFINES   = -DVERSION=\"$(VERSION)\" \
             -DDATE=\"$(DATE)\"       \
             -DPACKAGE=\"$(PACKAGE)\"

@@ -13,6 +13,7 @@
 #include <netdb.h>      /* gethostbyname() send() recv()             */
 #include <sys/stat.h>   /* stat() S_ISDIR()                          */
 #include <limits.h>     /* realpath()                                */
+#include <time.h>       /* clock_gettime()                           */
 
 #include "client.h"
 #include "http.h"
@@ -57,7 +58,7 @@ int c_handler_list_init(struct c_handler_list* l, int max_clients)
  *
  *  @return 0 em sucesso, -1 caso 'h' seja NULL ou malloc() falhe.
  */
-int c_handler_init(struct c_handler** h, int sck, char* rootdir)
+int c_handler_init(struct c_handler** h, int sck, char* rootdir, int bandwidth)
 {
   if ((h == NULL) || (*h != NULL))
     return -1;
@@ -85,6 +86,7 @@ int c_handler_init(struct c_handler** h, int sck, char* rootdir)
   strncpy((*h)->filepath, rootdir, BUFFER_SIZE);
   (*h)->filestatus = -1;
   (*h)->filesize   = -1;
+  (*h)->bandwidth  = bandwidth;
 
   return 0;
 }
@@ -361,7 +363,7 @@ int file_check(struct c_handler* h, char* rootdir, int rootdirsize)
 }
 
 
-/** Reseta os valores 'h->size_left' e 'h->size_sent' para indicar
+/** Reseta os valores 'h->filebuffsize_left' e 'h->filebuffsize_sent' para indicar
  *  que vamos comecar a mandar um arquivo.
  *
  *  @warning A cada 'coisa' que formos enviar, temos que adicionar
@@ -376,18 +378,18 @@ int prepare_msg_to_send(struct c_handler* h)
 
 
   if (h->output == h->fileerror)
-    h->size_left = h->fileerrorsize;
+    h->filebuffsize_left = h->fileerrorsize;
 
   else if (h->output == h->answer)
-    h->size_left = h->answer_size;
+    h->filebuffsize_left = h->answer_size;
 
   else if (h->output == h->filebuff)
-    h->size_left = h->filebuffsize;
+    h->filebuffsize_left = h->filebuffsize;
 
   else
-    h->size_left = strlen(h->output);
+    h->filebuffsize_left = strlen(h->output);
 
-  h->size_sent = 0;
+  h->filebuffsize_sent = 0;
 
   return 0;
 }
@@ -396,13 +398,30 @@ int prepare_msg_to_send(struct c_handler* h)
 /** Continua enviando para h->client a mensagem apontada por h->output
  *  atraves de sockets nao-bloqueantes.
  *
+ *  Essa funcao respeira o limite de h->bandwidth.
+ *  Sempre enviamos o buffer de 'h->bandwidth' em 'h->bandwidth' ate que
+ *  'h->filebuffsize_left' seja igual a zero.
+ *
  *  @return O numero de caracteres enviados em caso de sucesso.
  *          Se houver algum erro fatal, retorna -1. Se o socket for
  *          bloquear, retorna -2.
  */
 int keep_sending_msg(struct c_handler* h)
 {
-  int retval = send(h->client, h->output + h->size_sent, h->size_left, 0);
+  int size;
+  int retval;
+
+
+// O BUG SO ACONTECE QUANDO BANDWIDTH >= BUFFER_SIZE
+  if (h->filebuffsize_left == 0)
+    return 0;
+
+  if ((h->filebuffsize_left) > (h->bandwidth))
+    size = h->filebuffsize_left - (h->filebuffsize_left - h->bandwidth);
+  else
+    size = h->bandwidth - (h->bandwidth - h->filebuffsize_left);
+
+  retval = send(h->client, h->output + h->filebuffsize_sent, size - h->timer_sizesent, 0);
 
   if (retval == -1)
   {
@@ -413,11 +432,10 @@ int keep_sending_msg(struct c_handler* h)
     }
     return -2;
   }
-  else
-  {
-    h->size_sent += retval;
-    h->size_left -= retval;
-  }
+
+
+  h->filebuffsize_sent += retval;
+  h->filebuffsize_left -= retval;
 
   return retval;
 }
@@ -467,8 +485,8 @@ int get_file_chunk(struct c_handler* h)
   retval = fread(h->filebuff, sizeof(char), BUFFER_SIZE - 1, h->filep);
 
   h->filebuffsize = retval;
-  h->size_left = retval;
-  h->size_sent = 0;
+  h->filebuffsize_left    = retval;
+  h->filebuffsize_sent    = 0;
 
   if (retval < (BUFFER_SIZE - 1))
   {
@@ -579,3 +597,19 @@ int build_header(struct c_handler* h)
 
   return n;
 }
+
+
+int timer_get(struct timespec *tp)
+{
+  return clock_gettime(CLOCK_PROCESS_CPUTIME_ID, tp);
+}
+
+float timer_sub(struct timespec *a, struct timespec *b)
+{
+  int   sec  = (a->tv_sec - b->tv_sec);
+  float nsec = ((a->tv_nsec - b->tv_nsec) / 1e9);
+
+  return (sec + nsec);
+}
+
+

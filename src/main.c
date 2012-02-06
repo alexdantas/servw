@@ -19,6 +19,7 @@
 #include "server.h"
 #include "http.h"
 #include "verbose_macro.h"
+#include "timer.h"
 
 #define MAX_CLIENTS  10
 #define BUFFER_SIZE  256
@@ -33,10 +34,11 @@ int total_clients = 0;
 int handle_args(int argc, char* argv[])
 {
   int port;
+  int bandwidth;
 
-  if (argc != 3)
+  if (argc != 4)
   {
-    printf("Usage: servw [port_number] [root_directory]\n");
+    printf("Usage: servw [port_number] [root_directory] [bandwidth (Bytes/s)]\n");
     return -1;
   }
 
@@ -47,6 +49,12 @@ int handle_args(int argc, char* argv[])
     return -1;
   }
 
+  bandwidth = atoi(argv[3]);
+  if (bandwidth <= 0)
+  {
+    printf("Invalid bandwidth %dBytes/s! Choose a number greater than 0");
+    return -1;
+  }
   return 0;
 }
 
@@ -247,7 +255,7 @@ int main(int argc, char *argv[])
     rootdirsize -= strlen (argv[2]);
   }
 
-
+  // Expandir os symbolic links
   if (realpath(rootdir, buffer) == NULL)
   {
     perror("Error at realpath()");
@@ -287,7 +295,7 @@ int main(int argc, char *argv[])
     readfds  = clientfds;
     writefds = clientfds;
 
-    FD_SET  (listener, &readfds);
+    FD_SET(listener, &readfds);
 
     retval = select(maxfds + 1, &readfds, &writefds, NULL, NULL);
 
@@ -306,7 +314,7 @@ int main(int argc, char *argv[])
         {
           struct c_handler* handler = NULL;
 
-          retval = c_handler_init(&handler, new_client, rootdir);
+          retval = c_handler_init(&handler, new_client, rootdir, atoi(argv[3]));
           if (retval != -1)
           {
             retval = c_handler_add(handler, &handler_list);
@@ -321,7 +329,6 @@ int main(int argc, char *argv[])
         } /** @todo limpar isso, esta muito feio */
       }
     }
-
 
     /* Maquina de estados dos clienthandlers */
     if (handler_list.current > 0)
@@ -411,15 +418,19 @@ int main(int argc, char *argv[])
           LOG_WRITE("Header enviado");
           handler->output = handler->filebuff;
           start_sending_file(handler);
-          handler->state = FILE_SENDING;
+          handler->state           = FILE_SENDING;
           handler->need_file_chunk = 1;
-          handler->filesentsize = 0;
+          handler->filesize_sent    = 0;
+          handler->timer_sizesent  = 0;
+          timer_start(&(handler->timer));
           break;
 
         case FILE_SENDING:
           if (FD_ISSET(handler->client, &writefds))
           {
-            LOG_WRITE("Enviando arquivo");
+            float delta;
+
+            //~ LOG_WRITE("Enviando arquivo");
 
             if (handler->need_file_chunk == 1)
             {
@@ -435,22 +446,41 @@ int main(int argc, char *argv[])
               handler->need_file_chunk = 0;
             }
 
-            retval = keep_sending_msg(handler);
-            if (retval == -1)
+            timer_stop(&(handler->timer));
+
+            delta = timer_delta(&(handler->timer));
+            if (delta < 1) // 1 segundo
             {
-              LOG_WRITE("Erro de conexao!");
-              handler->state = FINISHED;
-              break;
-            }
-            if (retval == 0)
-            {
-              handler->need_file_chunk = 1;
-              //~ LOG_WRITE("... ");
+              if ((handler->timer_sizesent) < (handler->bandwidth))
+              {
+                retval = keep_sending_msg(handler);
+                if (retval == -1)
+                {
+                  LOG_WRITE("Erro de conexao!");
+                  handler->state = FINISHED;
+                  break;
+                }
+
+                if (retval == 0)
+                  handler->need_file_chunk = 1;
+
+                handler->timer_sizesent += retval;
+                handler->filesize_sent  += retval;
+
+                //~ printf("Mandei %d Bytes\n", handler->timer_sizesent);fflush(stdout);
+// Simples servidor WEB em C. Suporta múltiplos clientes via sockets não-blockeantes.
+              }
             }
             else
-              handler->filesentsize += retval;
+            {
+              /* Se o limite de banda for muito maior do que eu consigo mandar
+               * em 1 segundo, nunca vou passar por aqui */
+              printf ("Velocidade: %.2f Bytes/s\n", (handler->timer_sizesent / delta));fflush (stdout);
+              timer_start (&(handler->timer));
+              handler->timer_sizesent = 0;
+            }
 
-            if (handler->filesentsize >= handler->filesize)
+            if (handler->filesize_sent >= handler->filesize)
               handler->state = FILE_SENT;
           }
           break;
