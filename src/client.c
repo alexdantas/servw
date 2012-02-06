@@ -412,16 +412,20 @@ int keep_sending_msg(struct c_handler* h)
   int retval;
 
 
-// O BUG SO ACONTECE QUANDO BANDWIDTH >= BUFFER_SIZE
   if (h->filebuffsize_left == 0)
     return 0;
 
+// limitar baseado no tamanho restante do buffer
   if ((h->filebuffsize_left) > (h->bandwidth))
     size = h->filebuffsize_left - (h->filebuffsize_left - h->bandwidth);
   else
     size = h->bandwidth - (h->bandwidth - h->filebuffsize_left);
 
-  retval = send(h->client, h->output + h->filebuffsize_sent, size - h->timer_sizesent, 0);
+// limitar baseado no tamanho ja enviado ate agora
+  if ((h->timer_sizesent + size) > h->bandwidth)
+    size = (h->bandwidth - h->timer_sizesent);
+
+  retval = send(h->client, h->output + h->filebuffsize_sent, size, 0);
 
   if (retval == -1)
   {
@@ -484,7 +488,7 @@ int get_file_chunk(struct c_handler* h)
   memset(&(h->filebuff), '\0', BUFFER_SIZE);
   retval = fread(h->filebuff, sizeof(char), BUFFER_SIZE - 1, h->filep);
 
-  h->filebuffsize = retval;
+  h->filebuffsize         = retval;
   h->filebuffsize_left    = retval;
   h->filebuffsize_sent    = 0;
 
@@ -495,7 +499,7 @@ int get_file_chunk(struct c_handler* h)
 
     if (ferror(h->filep))
     {
-      perror("Error at ferror()");
+      LOG_WRITE("Error at fread()");
       return -1;
     }
   }
@@ -506,18 +510,21 @@ int get_file_chunk(struct c_handler* h)
 /** Constroi e armazena em 'h->fileerror' uma pagina HTML contendo
  *  o erro ocorrido.
  */
-void build_error_html(struct c_handler* h)
+int build_error_html(struct c_handler* h)
 {
   int size = get_http_status_msg(h->filestatus, h->filestatusmsg, BUFFER_SIZE);
+  int n;
+
+
   h->filestatusmsg_size = size;
 
-  snprintf(h->fileerror, BUFFER_SIZE,
-           "<html>\n<head>\n<title>Error %d</title>\n</head>\n<body>\n"
-           "<h3>Error %d - %s</h3>\n<hr><pre>%s</pre>"
-           "</body>\n</html>",
-           h->filestatus, h->filestatus, h->filestatusmsg, PACKAGE_NAME);
+  n = snprintf(h->fileerror, BUFFER_SIZE,
+              "<html>\n<head>\n<title>Error %d</title>\n</head>\n<body>\n"
+              "<h3>Error %d - %s</h3>\n<hr><pre>%s</pre>"
+              "</body>\n</html>",
+              h->filestatus, h->filestatus, h->filestatusmsg, PACKAGE_NAME);
 
-  h->fileerrorsize = strlen(h->fileerror);
+  return n;
 }
 
 

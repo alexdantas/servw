@@ -91,16 +91,16 @@ int  c_handler_add(struct c_handler* h, struct c_handler_list* l);
 int  c_handler_remove(struct c_handler* h, struct c_handler_list* l);
 void c_handler_exit(struct c_handler* h);
 
-int  receive_message(struct c_handler* h);
-int  file_check(struct c_handler* h, char* rootdir, int rootdirsize);
-int  prepare_msg_to_send(struct c_handler* h);
-int  keep_sending_msg(struct c_handler* h);
-int  start_sending_file(struct c_handler* h);
-int  stop_sending_file(struct c_handler* h);
-int  get_file_chunk(struct c_handler* h);
-void build_error_html(struct c_handler* h);
-int  parse_request(struct c_handler* h);
-int  build_header(struct c_handler* h);
+int receive_message(struct c_handler* h);
+int file_check(struct c_handler* h, char* rootdir, int rootdirsize);
+int prepare_msg_to_send(struct c_handler* h);
+int keep_sending_msg(struct c_handler* h);
+int start_sending_file(struct c_handler* h);
+int stop_sending_file(struct c_handler* h);
+int get_file_chunk(struct c_handler* h);
+int build_error_html(struct c_handler* h);
+int parse_request(struct c_handler* h);
+int build_header(struct c_handler* h);
 
 int timer_get(struct timespec *tp);
 float timer_sub(struct timespec *a, struct timespec *b);

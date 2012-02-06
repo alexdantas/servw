@@ -386,13 +386,13 @@ int main(int argc, char *argv[])
           retval = file_check(handler, rootdir, strlen(rootdir));
           if (retval == 0)
           {
-            build_header(handler);
+            handler->answer_size = build_header(handler);
             handler->output = handler->answer;
             handler->state = HEADER_SENDING;
           }
           else
           {
-            build_error_html(handler);
+            handler->fileerrorsize = build_error_html(handler);
             handler->answer_size = build_header(handler);
             handler->output = handler->answer;
             handler->state = ERROR_HEADER_SENDING;
@@ -420,7 +420,7 @@ int main(int argc, char *argv[])
           start_sending_file(handler);
           handler->state           = FILE_SENDING;
           handler->need_file_chunk = 1;
-          handler->filesize_sent    = 0;
+          handler->filesize_sent   = 0;
           handler->timer_sizesent  = 0;
           timer_start(&(handler->timer));
           break;
@@ -449,7 +449,7 @@ int main(int argc, char *argv[])
             timer_stop(&(handler->timer));
 
             delta = timer_delta(&(handler->timer));
-            if (delta < 1) // 1 segundo
+            if (delta < 1)
             {
               if ((handler->timer_sizesent) < (handler->bandwidth))
               {
@@ -466,15 +466,10 @@ int main(int argc, char *argv[])
 
                 handler->timer_sizesent += retval;
                 handler->filesize_sent  += retval;
-
-                //~ printf("Mandei %d Bytes\n", handler->timer_sizesent);fflush(stdout);
-// Simples servidor WEB em C. Suporta múltiplos clientes via sockets não-blockeantes.
               }
             }
             else
             {
-              /* Se o limite de banda for muito maior do que eu consigo mandar
-               * em 1 segundo, nunca vou passar por aqui */
               printf ("Velocidade: %.2f Bytes/s\n", (handler->timer_sizesent / delta));fflush (stdout);
               timer_start (&(handler->timer));
               handler->timer_sizesent = 0;
