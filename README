@@ -1,5 +1,87 @@
-servw
+================================================================================
+                                    servw
+================================================================================
 
-  Simple web server with non-blocking client handling
+Simples servidor WEB em C.
+
+Features:
+
+  Suporta multiplos clientes via sockets não-bloqueantes.
+  Opcionalmente daemon.
+  Controle de velocidade.
+  Implementacao simples e bem-comentada.
 
 
+================================================================================
+                   Historico de Mudancas e Logica do Programa
+================================================================================
+
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * 
+ *
+ *
+ * Originalmente, o programa era um simples servidor que recebia uma
+ * request e lidava com apenas com ela. Ele lidava com esse unico
+ * cliente linearmente e depois terminava a execucao.
+ *
+ * Depois, fiz o servidor poder servir varios clientes atraves de um
+ * array de clientes e um loop infinito 'com descanso'.
+ *   Aqui, passei a usar a funcao select(), que me diz quando um cliente
+ *   esta pronto para receber ou enviar dados. Quando nenhum cliente
+ *   esta pronto, ela fica 'descansando', poupando recursos da maquina.
+ *   select() tambem me permite saber quando tem um novo cliente tentando
+ *   se conectar.
+ * Eu servia os clientes de forma bloqueante (ou seja, so servia um
+ * quando outro tinha acabado). Isso era ineficiente e fazia todos ficarem
+ * esperando.
+ *
+ * A proxima implementacao foi o uso de sockets nao-bloqueantes. Isso
+ * permite que eu alterne todos os clientes, um após o outro, servindo
+ * todos 'ao mesmo tempo'. Cada cliente possuia uma estrutura client_handler,
+ * que contem os dados de seu cliente (quanto falta pra enviar, qual
+ * arquivo ele pediu, o socket, etc).
+ * O problema era que o servidor roubava toda a banda da rede. A rede
+ * ficava lenta enquanto o servidor estivesse em execucao.
+ *
+ * Entao implementei um controle de velocidade. Isso delimitava quanta
+ * banda cada usuario poderia ter por vez. Esse parametro e passado
+ * pela linha de comando e medido em Bytes/segundo.
+ *   O controle de velocidade e feito mandando apenas a quantidade de
+ *   bytes que eu posso, dentro de um segundo. Se eu ja mandar tudo o
+ *   que eu puder e ainda nao completar um segundo, eu deixo pra la
+ *   e passo pro proximo cliente.
+ * Isso trouxe problemas porque o uso de memoria era gigantesco. Como
+ * de acordo com select() o cliente sempre estava pronto para escrita
+ * (ele ficava esperando por mais dados o tempo todo), eu ficava num
+ * loop infinito 'sem descanso'. O servidor consumia 98% da CPU.
+ *
+ * Por isso sofistiquei o controle de velocidade. Agora coloquei um
+ * timer para cada cliente. Esse timer indicava quanto tempo ainda
+ * faltava para eu poder mandar mais coisas pro cliente.
+ * Entao, select() deveria descansar pelo menor tempo dos clientes.
+ * A cada vez que passasse pelo select(), diminuiriamos o tempo no
+ * timer de cada cliente e se algum zerasse, voltariamos a servir
+ * esse cliente.
+ *   Quando mandamos tudo o que podiamos, retiramos o cliente do
+ *   select(). Assim, ele efetivamente 'nao existia'. Isso permitia
+ *   o servidor 'descansar' quando nao tinha nada pra mandar.
+ *   Quando o timer desse cliente zerasse, incluiamos ele de novo
+ *   no select() e voltava tudo de novo.
+ *
+ * Por fim, fiz o servidor se tornar um daemon - programa que roda
+ * no fundo do sistema. Assim, podemos iniciar o servidor e 'deixar
+ * ele pra la' - independente de um terminal.
+ *   Juntei tudo necessario para o daemon apenas numa funcao. Assim,
+ *   para fazer o servidor rodar de forma 'normal', basta comentar
+ *   a chamada para essa funcao e recompilar.
+ *
+ * Atualmente o codigo esta uma bagunca e precisa ser reformatado.
+ *   Os modulos estao muito dependentes entre si. Comentarios em
+ *   locais inoportunos. Logs e mais logs onde nao deveria haver.
+ *   Mistura de portugues e ingles na descricao do programa e nas
+ *   mensagens de erro.
+ * Espero corrigir isso tudo e fazer esse programa um servidor
+ * 'de verdade'.
+ *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ 
