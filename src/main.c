@@ -25,9 +25,6 @@
 #define BUFFER_SIZE  256
 
 
-/** Guarda o numero de clientes servidos no total */
-int total_clients = 0;
-
 /** Lida com os argumentos passados pela linha de comando: port 'port number'
  *  e 'root directory'.
  */
@@ -52,7 +49,7 @@ int handle_args(int argc, char* argv[])
   bandwidth = atoi(argv[3]);
   if (bandwidth <= 0)
   {
-    printf("Invalid bandwidth %dBytes/s! Choose a number greater than 0");
+    printf("Invalid bandwidth '%d bytes/s'! Choose a number greater than 0.\n", atoi(argv[3]));
     return -1;
   }
   return 0;
@@ -143,7 +140,6 @@ int get_http_status_msg(int status, char* buff, size_t buffsize)
  *  Caso haja um erro, essa funcao interrompe a execucao do programa e
  *  exibe a mensagem de erro em stderr.
  *  Isso porque ela depende do perror() especifico de cada funcao chamada.
- *
  */
 void daemonize(FILE* logfile, char* logname, FILE* errfile, char* errlogname)
 {
@@ -190,9 +186,19 @@ void daemonize(FILE* logfile, char* logname, FILE* errfile, char* errlogname)
 }
 
 
+/** Ignora o sinal SIGPIPE que e mandado toda vez que um cliente desconecta
+ *  enquanto estou mandando dados.
+ *
+ *  @note Nao se preocupe, ignorar SIGPIPE nao traz nenhum problema...
+ */
 void ignore_sigpipe(int signal)
 { }
 
+
+/** Determina o que o programa vai fazer quando receber sinais especificos.
+ *
+ *  @note Por enquanto so lidamos com SIGPIPE
+ */
 void set_signals()
 {
     struct sigaction sa;
@@ -213,13 +219,21 @@ int main(int argc, char *argv[])
   char rootdir[BUFFER_SIZE];
   int  rootdirsize;
 
-  int  listener    = -1;
-  int  maxfds;
+  int listener = -1;
+  int maxfds;
+  int select_retval;
 
   struct c_handler_list handler_list;
+  struct c_handler* handler = NULL;
+
   fd_set readfds;
   fd_set writefds;
   fd_set clientfds;
+  fd_set total_readfds;
+  fd_set total_writefds;
+  int total_clients = 0;
+
+  struct timeval tmp_timer;
 
   char buffer[BUFFER_SIZE];
   int retval;
@@ -229,9 +243,8 @@ int main(int argc, char *argv[])
   if (retval == -1)
     exit (EXIT_FAILURE);
 
-
-  /* Inicializar daemon */
-  //daemonize(logfile, "servw.log", errfile, "servwERR.log");
+  /* Inicializar daemon - pode ser commented-out */
+  //~ daemonize(logfile, "servw.log", errfile, "servwERR.log");
 
   /* Inicializar servidor */
   port_number = atoi(argv[1]);
@@ -242,29 +255,31 @@ int main(int argc, char *argv[])
   rootdirsize = BUFFER_SIZE;
   if (argv[2][0] == '/')
   {
+    // Caminho absoluto
     strncpy(rootdir, argv[2], rootdirsize - 1);
     rootdirsize -= strlen(argv[2]);
   }
   else
   {
+    // Caminho relativo
     strncpy(rootdir, getenv("PWD"), rootdirsize - 1);
     rootdirsize -= strlen (getenv("PWD"));
     rootdir[strlen(rootdir)] = '/';
     rootdirsize--;
     strncat(rootdir, argv[2], rootdirsize - 1);
-    rootdirsize -= strlen (argv[2]);
+    rootdirsize = strlen (rootdir);
   }
 
-  // Expandir os symbolic links
+  // Expandir os symbolic links do diretorio root
   if (realpath(rootdir, buffer) == NULL)
   {
-    perror("Error at realpath()");
+    perror("Erro em realpath()");
     exit(EXIT_FAILURE);
   }
   strncpy(rootdir, buffer, rootdirsize - 1);
+  printf("Diretorio raiz: %s\n", rootdir);
 
-  printf("Root directory set to: %s\n", rootdir);
-
+  // server_start -  muito importante!
   listener = server_start(port_number);
   if (listener == -1)
     exit(EXIT_FAILURE);
@@ -274,6 +289,9 @@ int main(int argc, char *argv[])
   FD_ZERO(&readfds);
   FD_ZERO(&writefds);
   FD_ZERO(&clientfds);
+  FD_ZERO(&total_readfds);
+  FD_ZERO(&total_writefds);
+  FD_SET(listener, &total_readfds);
 
   maxfds = listener;
 
@@ -292,288 +310,387 @@ int main(int argc, char *argv[])
   /* Main Loop */
   while (1)
   {
-    readfds  = clientfds;
-    writefds = clientfds;
+    readfds  = total_readfds;
+    writefds = total_writefds;
 
-    FD_SET(listener, &readfds);
+    // 'backup' do smaller_timeout - veja 'man 2 select', Linux Notes
+    if (handler_list.smaller_timeout != NULL)
+    {
+      tmp_timer.tv_sec  = handler_list.smaller_timeout->tv_sec;
+      tmp_timer.tv_usec = handler_list.smaller_timeout->tv_usec;
+    }
 
-    retval = select(maxfds + 1, &readfds, &writefds, NULL, NULL);
+
+    select_retval = select(maxfds + 1, &readfds, &writefds, NULL, handler_list.smaller_timeout);
+
+
+    if (handler_list.smaller_timeout != NULL)
+    {
+      handler_list.smaller_timeout->tv_sec = tmp_timer.tv_sec;
+      handler_list.smaller_timeout->tv_usec = tmp_timer.tv_usec;
+    }
+
+    if (select_retval == -1)
+      perror("Erro em select()");
 
     /* nova conexao */
     if (FD_ISSET (listener, &readfds))
     {
-      LOG_WRITE("\n *** \nTem um cliente tentando se conectar!");
+      struct c_handler* handler = NULL;
+      int new_client = -1;
 
-      if (handler_list.current < handler_list.max)
+      if (handler_list.current > handler_list.max)
       {
-        int new_client = accept(listener, NULL, NULL);
-
-        if (new_client == -1)
-          perror("Erro em accept()");
-        else
-        {
-          struct c_handler* handler = NULL;
-
-          retval = c_handler_init(&handler, new_client, rootdir, atoi(argv[3]));
-          if (retval != -1)
-          {
-            retval = c_handler_add(handler, &handler_list);
-            if (retval != -1)
-            {
-              maxfds = bigger(new_client, maxfds);
-              FD_SET(new_client, &clientfds);
-              LOG_WRITE("Nova conexao de cliente aceita!");
-              total_clients++;
-            }
-          }
-        } /** @todo limpar isso, esta muito feio */
+        LOG_WRITE_ERROR("Limite de clientes excedido!");
+        continue;
       }
+
+      new_client = accept(listener, NULL, NULL);
+      if (new_client == -1)
+      {
+        perror("Erro em accept()");
+        continue;
+      }
+
+      retval = c_handler_init(&handler, new_client, rootdir, atoi(argv[3]));
+      if (retval == -1)
+      {
+        perror("Erro em c_handler_init()");
+        close(new_client);
+        continue;
+      }
+
+      retval = c_handler_add(handler, &handler_list);
+      if (retval == -1)
+      {
+        LOG_WRITE_ERROR("Erro em c_handler_add()");
+        close(new_client);
+        continue;
+      }
+
+      maxfds = bigger(new_client, maxfds);
+      FD_SET(new_client, &total_readfds);
+      FD_SET(new_client, &total_writefds);
+      LOG_WRITE("Nova conexao de cliente aceita!");
+      total_clients++;
     }
 
-    /* Maquina de estados dos clienthandlers */
-    if (handler_list.current > 0)
+
+    if (handler_list.current == 0)
+      continue;
+
+
+    handler = handler_list.begin;
+    while (handler != NULL)
     {
-      struct c_handler* handler = NULL;
-
-      handler = handler_list.begin;
-      while (handler != NULL)
+      if (handler->waiting == 1)
       {
-        switch (handler->state)
+        timer_stop(&(handler->cronometro));
+        timer_delta(&(handler->cronometro));
+        // tirar do tempo de espera o tempo que acabou de passar
+        timersub(&(handler->timer.delta), &(handler->cronometro.delta), &(handler->timer.delta));
+
+        float tmptmp =  handler->timer.delta.tv_sec + handler->timer.delta.tv_usec / 1e6;
+        if (tmptmp <= 0)
         {
-        case MSG_RECEIVING:
-          /** @todo @bug @warning
-           *  Caso o cliente conecte mas tenha um 'lag', o FD_ISSET do readfds
-           *  nao vai dar.
-           *  Porem, se o cliente terminar de mandar a mensagem, vai acontecer
-           *  a mesma coisa.
-           *  Como diferenciar o fato de que o cliente pode estar numa conexao
-           *  lenta com o fato de que o cliente pode ter terminado de enviar?
-           */
-          if (FD_ISSET(handler->client, &readfds))
-          {
-            retval = receive_message(handler);
-            if (retval == -1)
-            {
-              LOG_WRITE("Erro de conexao com cliente!");
-              handler->state = FINISHED;
-            }
-            if (retval == 1)
-            {
-              LOG_WRITE("Cliente desconectou");
-              handler->state = FINISHED;
-            }
-          }
-          else
-          {
-            if (find_crlf(handler->request))
-              handler->state = MSG_RECEIVED;
-          }
-          break;
+          printf("Coloquei cliente %d de volta\n", handler->client);fflush(stdout);
+          FD_SET(handler->client, &total_writefds);
+          maxfds = bigger(handler->client, maxfds);
 
-        case MSG_RECEIVED:
-          LOG_WRITE("Mensagem recebida!");
-          handler->request_size = strlen(handler->request);
-          handler->state = FILE_PROCESSING;
-          break;
+          if (handler_list.smaller_timeout == &(handler->timer.delta))
+          {
+            if (handler_list.current == 1)
+              handler_list.smaller_timeout = NULL;
+            else
+              get_new_smaller_timeout(&handler_list, handler);
+          }
+          handler->waiting = 0;
+        }
+        else
+        {
+          timer_start(&(handler->cronometro));
+        }
+      }
 
-        case FILE_PROCESSING:
-          LOG_WRITE("Processando request...");
-          retval = parse_request(handler);
+      /* Maquina de estados dos c_handlers */
+      switch (handler->state)
+      {
+      case MSG_RECEIVING:
+        /** @todo @bug @warning
+         *  Caso o cliente conecte mas tenha um 'lag', o FD_ISSET do readfds
+         *  nao vai dar.
+         *  Porem, se o cliente terminar de mandar a mensagem, vai acontecer
+         *  a mesma coisa.
+         *  Como diferenciar o fato de que o cliente pode estar numa conexao
+         *  lenta com o fato de que o cliente pode ter terminado de enviar?
+         */
+        if (FD_ISSET(handler->client, &readfds))
+        {
+          retval = receive_message(handler);
           if (retval == -1)
           {
-            // TODO TODO TODO LIDAR COM COISAS ESTRANHAS
+            LOG_WRITE("Erro de conexao com cliente!");
+            handler->state = FINISHED;
           }
-          retval = file_check(handler, rootdir, strlen(rootdir));
+          if (retval == 1)
+          {
+            LOG_WRITE("Cliente desconectou");
+            handler->state = FINISHED;
+          }
+        }
+        else
+        {
+          if (find_crlf(handler->request))
+            handler->state = MSG_RECEIVED;
+        }
+        break;
+
+      case MSG_RECEIVED:
+        LOG_WRITE("Mensagem recebida!");
+        handler->request_size = strlen(handler->request);
+        handler->state = FILE_PROCESSING;
+        break;
+
+      case FILE_PROCESSING:
+        LOG_WRITE("Processando request...");
+        retval = parse_request(handler);
+        if (retval == -1)
+        {
+          // TODO TODO TODO LIDAR COM COISAS ESTRANHAS
+        }
+        retval = file_check(handler, rootdir, strlen(rootdir));
+        if (retval == 0)
+        {
+          handler->answer_size = build_header(handler);
+          handler->output = handler->answer;
+          handler->state = HEADER_SENDING;
+        }
+        else
+        {
+          handler->fileerrorsize = build_error_html(handler);
+          handler->answer_size = build_header(handler);
+          handler->output = handler->answer;
+          handler->state = ERROR_HEADER_SENDING;
+        }
+
+        prepare_msg_to_send(handler);
+        LOG_WRITE("Arquivo processado!");
+        break;
+
+      case HEADER_SENDING:
+        LOG_WRITE("Enviando Headers...");
+        if (FD_ISSET(handler->client, &writefds))
+        {
+          retval = keep_sending_msg(handler);
           if (retval == 0)
-          {
-            handler->answer_size = build_header(handler);
-            handler->output = handler->answer;
-            handler->state = HEADER_SENDING;
-          }
-          else
-          {
-            handler->fileerrorsize = build_error_html(handler);
-            handler->answer_size = build_header(handler);
-            handler->output = handler->answer;
-            handler->state = ERROR_HEADER_SENDING;
-          }
+            handler->state = HEADER_SENT;
+          if (retval == -1)
+            handler->state = FINISHED;
+        }
+        break;
 
-          prepare_msg_to_send(handler);
-          LOG_WRITE("Arquivo processado!");
-          break;
+      case HEADER_SENT:
+        LOG_WRITE("Header enviado");
+        handler->output = handler->filebuff;
+        start_sending_file(handler);
+        handler->state           = FILE_SENDING;
+        handler->need_file_chunk = 1;
+        handler->filesize_sent   = 0;
+        handler->timer_sizesent  = 0;
+        timer_start(&(handler->timer));
+        break;
 
-        case HEADER_SENDING:
-          LOG_WRITE("Enviando Headers...");
-          if (FD_ISSET(handler->client, &writefds))
+      case FILE_SENDING:
+        // Checar se o cliente desconectou
+        if (FD_ISSET(handler->client, &readfds))
+        {
+          retval = receive_message(handler);
+          if (retval != 0)
           {
-            retval = keep_sending_msg(handler);
-            if (retval == 0)
-              handler->state = HEADER_SENT;
+            handler->state = FINISHED;
+            printf("Cliente desconectou!\n");fflush(stdout);
+          }
+        }
+
+        // Continuar mandando arquivo
+        if (FD_ISSET(handler->client, &writefds))
+        {
+          float delta;
+
+          if (handler->need_file_chunk == 1)
+          {
+            retval = get_file_chunk(handler);
             if (retval == -1)
-              handler->state = FINISHED;
-          }
-          break;
-
-        case HEADER_SENT:
-          LOG_WRITE("Header enviado");
-          handler->output = handler->filebuff;
-          start_sending_file(handler);
-          handler->state           = FILE_SENDING;
-          handler->need_file_chunk = 1;
-          handler->filesize_sent   = 0;
-          handler->timer_sizesent  = 0;
-          timer_start(&(handler->timer));
-          break;
-
-        case FILE_SENDING:
-          if (FD_ISSET(handler->client, &writefds))
-          {
-            float delta;
-
-            //~ LOG_WRITE("Enviando arquivo");
-
-            if (handler->need_file_chunk == 1)
             {
-              retval = get_file_chunk(handler);
+              LOG_WRITE("Erro na leitura do arquivo!");
+              handler->state = FINISHED;
+              break;
+            }
+            prepare_msg_to_send(handler);
+            handler->need_file_chunk = 0;
+          }
+
+          timer_stop(&(handler->timer));
+          delta = timer_delta(&(handler->timer));
+          if (delta < 1)
+          {
+            if ((handler->timer_sizesent) < (handler->bandwidth))
+            {
+              retval = keep_sending_msg(handler);
               if (retval == -1)
               {
-                LOG_WRITE("Erro na leitura do arquivo!");
+                LOG_WRITE("Erro de conexao!");
                 handler->state = FINISHED;
                 break;
               }
 
-              prepare_msg_to_send(handler);
-              handler->need_file_chunk = 0;
+              if (retval == 0)
+                handler->need_file_chunk = 1;
+
+              handler->timer_sizesent += retval;
+              handler->filesize_sent  += retval;
             }
-
-            timer_stop(&(handler->timer));
-
-            delta = timer_delta(&(handler->timer));
-            if (delta < 1)
+            // Ja mandei tudo o que podia mas ainda nao deu 1 segundo
+            else
             {
-              if ((handler->timer_sizesent) < (handler->bandwidth))
+              // Pra poupar processamento, tirar cliente do select()
+              FD_CLR(handler->client, &total_writefds);
+printf("Vamos pausar o cliente %d\n", handler->client);fflush(stdout);
+              if (maxfds == handler->client)
               {
-                retval = keep_sending_msg(handler);
-                if (retval == -1)
-                {
-                  LOG_WRITE("Erro de conexao!");
-                  handler->state = FINISHED;
-                  break;
-                }
-
-                if (retval == 0)
-                  handler->need_file_chunk = 1;
-
-                handler->timer_sizesent += retval;
-                handler->filesize_sent  += retval;
+                if (handler_list.current == 1)
+                  maxfds = listener;
+                else
+                  get_new_maxfds(&maxfds, &handler_list, handler);
               }
-            }
-            else
-            {
-              printf ("Velocidade: %.2f Bytes/s\n", (handler->timer_sizesent / delta));fflush (stdout);
-              timer_start (&(handler->timer));
-              handler->timer_sizesent = 0;
-            }
 
-            if (handler->filesize_sent >= handler->filesize)
-              handler->state = FILE_SENT;
-          }
-          break;
+              // delta = (1 - delta)
+              timersub(&(handler_list.onesec_timeout), &(handler->timer.delta), &(handler->timer.delta));
 
-        case FILE_SENT:
-          LOG_WRITE("Arquivo enviado");
-          stop_sending_file(handler);
-          handler->state = FINISHED;
-          break;
-
-        case ERROR_HEADER_SENDING:
-          if (FD_ISSET(handler->client, &writefds))
-          {
-            LOG_WRITE("Enviando Header de erro");
-            retval = keep_sending_msg(handler);
-            if (retval == 0)
-              handler->state = ERROR_HEADER_SENT;
-            else if (retval == -1)
-              handler->state = FINISHED;
-            else
-            {
-              //sending...
-            }
-          }
-          break;
-
-        case ERROR_HEADER_SENT:
-          LOG_WRITE("Header de erro enviado");
-          handler->output = handler->fileerror;
-          prepare_msg_to_send(handler);
-          handler->state = ERROR_SENDING;
-          break;
-
-        case ERROR_SENDING:
-          if (FD_ISSET(handler->client, &writefds))
-          {
-            LOG_WRITE("Enviando arquivo de erro");
-            retval = keep_sending_msg(handler);
-            if (retval == 0)
-              handler->state = ERROR_SENT;
-            if (retval == -1)
-              handler->state = FINISHED;
-
-            handler->fileerrorsize -= retval;
-
-            if (handler->fileerrorsize <= 0)
-              handler->state = ERROR_SENT;
-          }
-          break;
-
-        case ERROR_SENT:
-          LOG_WRITE("Arquivo de erro enviado");
-          handler->state = FINISHED;
-          break;
-
-        case FINISHED:
-          FD_CLR(handler->client, &clientfds);
-          if (maxfds == handler->client)
-          {
-            struct c_handler* tmp = handler_list.begin;
-
-            if (handler_list.current == 1)
-              maxfds = listener;
-            else
-            {
-              //untested
-              while (tmp != NULL)
+              if (handler_list.smaller_timeout == NULL)
+                handler_list.smaller_timeout = &(handler->timer.delta);
+              else
               {
-                if (tmp != handler)
-                  maxfds = bigger(tmp->client, maxfds);
-                tmp = tmp->next;
+                if (timercmp(&(handler->timer.delta), handler_list.smaller_timeout, <))
+                  handler_list.smaller_timeout = &(handler->timer.delta);
               }
+
+              timer_start(&(handler->cronometro));
+              handler->waiting = 1;
             }
-
           }
-          close(handler->client);
+          // Ja passou de 1 segundo
+          else
+          {
+            printf ("Velocidade: %.2f Bytes/s para o cliente %d\n", (handler->timer_sizesent / delta), handler->client);fflush (stdout);
+            timer_start(&(handler->timer));
+            handler->timer_sizesent = 0;
 
-          c_handler_remove(handler, &handler_list);
-          c_handler_exit(handler);
-          handler = handler_list.begin;
+            // Novo smaller timeout
+            if (handler_list.smaller_timeout == &(handler->timer.delta))
+            {
+              if (handler_list.current == 1)
+                handler_list.smaller_timeout = NULL;
+              else
+                get_new_smaller_timeout(&handler_list, handler);
+            }
+          }
 
-          LOG_WRITE("Cliente desconectou\n");
-          printf("%d clientes servidos ate agora\n", total_clients);
-          break;
+          if (handler->filesize_sent >= handler->filesize)
+            handler->state = FILE_SENT;
+        }
+        break;
 
-        default:
-          break;
+      case FILE_SENT:
+        LOG_WRITE("Arquivo enviado");
+        stop_sending_file(handler);
+        handler->state = FINISHED;
+        break;
+
+      case ERROR_HEADER_SENDING:
+        if (FD_ISSET(handler->client, &writefds))
+        {
+          LOG_WRITE("Enviando Header de erro");
+          retval = keep_sending_msg(handler);
+          if (retval == 0)
+            handler->state = ERROR_HEADER_SENT;
+          else if (retval == -1)
+            handler->state = FINISHED;
+          else
+          {
+            //sending...
+          }
+        }
+        break;
+
+      case ERROR_HEADER_SENT:
+        LOG_WRITE("Header de erro enviado");
+        handler->output = handler->fileerror;
+        prepare_msg_to_send(handler);
+        handler->state = ERROR_SENDING;
+        break;
+
+      case ERROR_SENDING:
+        if (FD_ISSET(handler->client, &writefds))
+        {
+          LOG_WRITE("Enviando arquivo de erro");
+          retval = keep_sending_msg(handler);
+          if (retval == 0)
+            handler->state = ERROR_SENT;
+          if (retval == -1)
+            handler->state = FINISHED;
+
+          handler->fileerrorsize -= retval;
+
+          if (handler->fileerrorsize <= 0)
+            handler->state = ERROR_SENT;
+        }
+        break;
+
+      case ERROR_SENT:
+        LOG_WRITE("Arquivo de erro enviado");
+        handler->state = FINISHED;
+        break;
+
+      case FINISHED:
+        FD_CLR(handler->client, &total_writefds);
+        FD_CLR(handler->client, &total_readfds);
+
+        if (handler_list.smaller_timeout == &(handler->timer.delta))
+        {
+          if (handler_list.current == 1)
+            handler_list.smaller_timeout = NULL;
+          else
+            get_new_smaller_timeout(&handler_list, handler);
         }
 
-      if (handler != NULL)
-        handler = handler->next;
+        if (maxfds == handler->client)
+        {
+          if (handler_list.current == 1)
+            maxfds = listener;
+          else
+            get_new_maxfds(&maxfds, &handler_list, handler);
+        }
 
-      } /*  while (handler != NULL) */
+        close(handler->client);
+        c_handler_remove(handler, &handler_list);
+        c_handler_exit(handler);
+        handler = NULL;
 
-    } /* if (handler_list.current > 0) */
+        LOG_WRITE("Cliente desconectou\n");
+        printf("Requests Servidas: %d\n", total_clients);
+        break;
+
+      default:
+        break;
+      }
+
+    if (handler != NULL)
+      handler = handler->next;
+
+    } /*  while (handler != NULL) */
 
   } /* while(1) */
 
   return 0;
 }
-

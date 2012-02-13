@@ -20,13 +20,16 @@ struct c_handler_list
   int current;             /**< Quantos handlers estao servindo clientes agora */
   int max;                 /**< Maximo de handlers possiveis ao mesmo tempo */
 
-  struct c_handler* begin; /**< Primeiro handler na lista */
-  struct c_handler* end;   /**< Ultimo handler na lista */
+  struct timeval *smaller_timeout;  /**< Menor timeout para sair do select() */
+  struct timeval  onesec_timeout;   /**< Guarda 'um segundo' para comparacao */
+
+  struct c_handler *begin; /**< Primeiro handler na lista */
+  struct c_handler *end;   /**< Ultimo handler na lista */
 };
 
 struct c_handler
 {
-  struct c_handler* next;        /**< Proximo handler na lista */
+  struct c_handler *next;        /**< Proximo handler na lista */
 
   int  client;                   /**< Socket do cliente servido. */
   int  state;                    /**< Estado em que se encontra o handler */
@@ -39,9 +42,9 @@ struct c_handler
   char filestatusmsg[BUFFER_SIZE]; /**< Mensagem equivalente ao status do arquivo. */
   int  filestatusmsg_size;         /**< O tamanho da mensagem de status do arquivo. */
 
-  FILE* filep;                   /**< Arquivo que o cliente pede */
-  int   filesize;                /**< Tamanho do arquivo solicitado*/
-  int   filesize_sent;            /**< Tamanho que ja foi enviado do arquivo como um todo */
+  FILE*  filep;                  /**< Arquivo que o cliente pede */
+  int    filesize;               /**< Tamanho do arquivo solicitado*/
+  int    filesize_sent;          /**< Tamanho que ja foi enviado do arquivo como um todo */
   time_t filelastm;              /**< Data de ultima modificacao do arquivo */
 
   char filebuff[BUFFER_SIZE];    /**< Buffer onde serao guardadas partes temporarias do arquivo */
@@ -62,14 +65,15 @@ struct c_handler
   int need_file_chunk;           /** Flag que indica se precisa pegar um pedaco do arquivo. */
 
 
-  int bandwidth;
+  int bandwidth;             /** Limite de banda - quantos bytes/segundo posso mandar por usuario */
 
-  int timer_sizesent;
+  int timer_sizesent;        /** Indica quanto foi mandado dentro de um intervalo */
 
   struct timert timer;
 
-  struct timespec timer_a;
-  struct timespec timer_b;
+  struct timert cronometro; /** Vai subtrair o #timer a cada rodada do loop principal */
+
+  int waiting;
 };
 
 
@@ -102,7 +106,7 @@ int build_error_html(struct c_handler* h);
 int parse_request(struct c_handler* h);
 int build_header(struct c_handler* h);
 
-int timer_get(struct timespec *tp);
-float timer_sub(struct timespec *a, struct timespec *b);
+void get_new_smaller_timeout (struct c_handler_list* l, struct c_handler *h);
+void get_new_maxfds(int* maxfds, struct c_handler_list* l, struct c_handler* h);
 
 #endif /* CLIENT_H_DEFINED */

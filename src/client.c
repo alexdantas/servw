@@ -41,6 +41,10 @@ int c_handler_list_init(struct c_handler_list* l, int max_clients)
     l->begin   = NULL;
     l->end     = NULL;
 
+    l->smaller_timeout = NULL;
+    l->onesec_timeout.tv_sec  = 1;
+    l->onesec_timeout.tv_usec = 0;
+
     return 0;
 }
 
@@ -51,7 +55,9 @@ int c_handler_list_init(struct c_handler_list* l, int max_clients)
  *  Nessa funcao utiliza-se alocacao dinamica de memoria para criar um
  *  novo c_handler.
  *
- * @note Essa funcao supoe que o socket 'clientsckt' esta devidamente
+ *  @bug  Essa funcao nao necessariamente seta 'errno'. Chamar perror()
+ *        logo apos ela pode gerar mensagens de erros indefinidas.
+ *  @note Essa funcao supoe que o socket 'clientsckt' esta devidamente
  *        conectado ao cliente.
  *
  *  @todo Colocar o malloc() na main e deixar essa funcao mais simples.
@@ -87,6 +93,8 @@ int c_handler_init(struct c_handler** h, int sck, char* rootdir, int bandwidth)
   (*h)->filestatus = -1;
   (*h)->filesize   = -1;
   (*h)->bandwidth  = bandwidth;
+
+  (*h)->waiting = 0;
 
   return 0;
 }
@@ -217,7 +225,7 @@ int receive_message(struct c_handler* h)
   int  buffer_size = BUFFER_SIZE;
   int  retval;
 
-  usleep(200000);
+  //~ usleep(200000);
   retval = recv(h->client, buffer, buffer_size, 0);
   if (retval == -1)
     if ((errno != EWOULDBLOCK) && (errno != EAGAIN))
@@ -606,17 +614,37 @@ int build_header(struct c_handler* h)
 }
 
 
-int timer_get(struct timespec *tp)
+
+/* Pegar um novo smaller_timeout*/
+void get_new_smaller_timeout (struct c_handler_list* l, struct c_handler *h)
 {
-  return clock_gettime(CLOCK_PROCESS_CPUTIME_ID, tp);
+  struct c_handler* tmp = l->begin;
+
+  l->smaller_timeout = &(l->onesec_timeout);
+  while (tmp != NULL)
+  {
+    if ((tmp->timer.delta.tv_sec > 0) &&
+        (timercmp(&(tmp->timer.delta), l->smaller_timeout, <)) &&
+        (tmp != h))
+      l->smaller_timeout = &(tmp->timer.delta);
+
+    tmp = tmp->next;
+  }
+  if (l->smaller_timeout == &(l->onesec_timeout))
+    l->smaller_timeout = NULL;
 }
 
-float timer_sub(struct timespec *a, struct timespec *b)
+void get_new_maxfds(int* maxfds, struct c_handler_list* l, struct c_handler* h)
 {
-  int   sec  = (a->tv_sec - b->tv_sec);
-  float nsec = ((a->tv_nsec - b->tv_nsec) / 1e9);
+  struct c_handler* tmp = l->begin;
 
-  return (sec + nsec);
+  while (tmp != NULL)
+  {
+    if (tmp != h)
+      *maxfds = bigger(tmp->client, *maxfds);
+    tmp = tmp->next;
+  }
 }
+
 
 

@@ -8,33 +8,9 @@
  * @todo Tornar o parser mais generalizado. (MUITO TRABALHO)
  */
 
-#include "http.h"
-
 #include <string.h>
 #include <ctype.h>
-
-
-struct httpparser_t
-{
-  char message[BUFFER_SIZE];
-  struct headers_t header;
-};
-
-struct headers_t
-{
-  char *method;
-  char *path;
-  char *http_version;
-
-  char *host;
-  char *user_agent;
-
-  char *status;
-  char *content_length;
-  char *content_type;
-  char *last_modified;
-  char *server;
-};
+#include "http.h"
 
 #define PROTOCOL "HTTP/1.0"
 
@@ -166,7 +142,6 @@ int is_error_status(int status)
   {
   case NOT_FOUND:
   case SERVER_ERROR:
-
     return 1;
     break;
   default:
@@ -187,7 +162,6 @@ int get_status_msg(int status, char* buf, size_t bufsize)
 {
   char* msg;
 
-
   if (buf == NULL)
     return -1;
 
@@ -204,11 +178,11 @@ int get_status_msg(int status, char* buf, size_t bufsize)
     break;
 
   default:
-    return -1;
+    msg = "Unknown Status Code";
+    break;
   }
 
   strncpy(buf, msg, bufsize);
 
   return strlen(buf);
 }
-

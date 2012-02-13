@@ -15,14 +15,14 @@
 #ifndef TIMER_H_DEFINED
 #define TIMER_H_DEFINED
 
-#include <time.h>
+#include <sys/time.h>
 
 
 /* For more info, check 'man clock_gettime'
  *
- * The 'struct timespec' is defined like this:
+ * The 'struct timeval' is defined like this:
  *
- *  struct timespec {
+ *  struct timeval {
  *      time_t tv_sec;      <- seconds
  *      long   tv_nsec;     <- nanoseconds
  *  };
@@ -33,8 +33,9 @@
 /** The timer structure */
 struct timert
 {
-  struct timespec start; /**< The timer start point */
-  struct timespec end;   /**< The timer stop point */
+  struct timeval start; /**< The timer start point */
+  struct timeval end;   /**< The timer stop point */
+  struct timeval delta; /**< The difference between #start and #end */
 };
 
 

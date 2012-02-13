@@ -4,30 +4,24 @@
  */
 
 #include <stdio.h>
-#include <time.h>
+#include <sys/time.h>
 #include "timer.h"
-
-/* Clock types for the timer:
- *
- * CLOCK_REALTIME            System-wide real-time clock.
- * CLOCK_MONOTONIC           Clock that represents monotonic time since some
- *                           unspecified starting point.
- * CLOCK_MONOTONIC_RAW       Similar to CLOCK_MONOTONIC, but provides access
- *                           to raw hardware-based time. (Linux-specific).
- * CLOCK_PROCESS_CPUTIME_ID  High-resolution per-process timer from the CPU.
- * CLOCK_THREAD_CPUTIME_ID   Thread-specific CPU-time clock.
- */
-
- #define CLOCK_TYPE      CLOCK_MONOTONIC
-
 
 
 /** Uses clock_gettime() to mark the number of seconds and nanoseconds
  *  between the Epoch and now.
  */
-static int get_time (struct timespec* tv)
+static int get_time (struct timeval* tv)
 {
-  return clock_gettime(CLOCK_TYPE, tv);
+  return gettimeofday(tv, NULL);
+}
+
+float get_seconds (struct timeval* tv)
+{
+  int sec = tv->tv_sec;
+  float usec = tv->tv_usec / 1e6;
+
+  return (sec + usec);
 }
 
 /** Returns the delta between the start and end of the timer.
@@ -37,13 +31,10 @@ static int get_time (struct timespec* tv)
  */
 float timer_delta (struct timert* t)
 {
-  int sec    = (t->end.tv_sec) - (t->start.tv_sec);
+  timersub (&(t->end), &(t->start), &(t->delta));
 
-  float nsec = (t->end.tv_nsec - t->start.tv_nsec) / 1e9;
-
-  return (sec + nsec);
+  return get_seconds (&(t->delta));
 }
-
 
 /** Records the current time as a start point.
  *

@@ -65,7 +65,7 @@ EXEC      = $(PACKAGE)
 CDEBUG    =
 CFLAGS    = $(CDEBUG) -Wall -Wextra -O2
 LDFLAGS   = 
-LIBS      = -lrt
+LIBS      =
 OBJ       = $(LOBJ)/server.o \
             $(LOBJ)/main.o   \
             $(LOBJ)/client.o \
