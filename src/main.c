@@ -273,7 +273,10 @@ int main(int argc, char *argv[])
   // Expandir os symbolic links do diretorio root
   if (realpath(rootdir, buffer) == NULL)
   {
-    perror("Erro em realpath()");
+    if (errno == ENOENT)
+      printf("Error! Directory doesn't exist: %s\n", rootdir);
+    else
+      perror("Erro em realpath()");
     exit(EXIT_FAILURE);
   }
   strncpy(rootdir, buffer, rootdirsize - 1);
@@ -339,6 +342,8 @@ int main(int argc, char *argv[])
       struct c_handler* handler = NULL;
       int new_client = -1;
 
+      VERBOSE(printf("Novo cliente tentando se conectar\n"));
+
       if (handler_list.current > handler_list.max)
       {
         LOG_WRITE_ERROR("Limite de clientes excedido!");
@@ -371,7 +376,7 @@ int main(int argc, char *argv[])
       maxfds = bigger(new_client, maxfds);
       FD_SET(new_client, &total_readfds);
       FD_SET(new_client, &total_writefds);
-      LOG_WRITE("Nova conexao de cliente aceita!");
+      LOG_WRITE("*** Nova conexao de cliente aceita! ***");
       total_clients++;
     }
 
@@ -393,7 +398,7 @@ int main(int argc, char *argv[])
         float tmptmp =  handler->timer.delta.tv_sec + handler->timer.delta.tv_usec / 1e6;
         if (tmptmp <= 0)
         {
-          printf("Coloquei cliente %d de volta\n", handler->client);fflush(stdout);
+          VERBOSE(printf("Continuar a enviar arquivo para cliente %d\n", handler->client));
           FD_SET(handler->client, &total_writefds);
           maxfds = bigger(handler->client, maxfds);
 
@@ -452,18 +457,23 @@ int main(int argc, char *argv[])
         break;
 
       case FILE_PROCESSING:
-        LOG_WRITE("Processando request...");
+        LOG_WRITE("Processando pedido...");
+
         retval = parse_request(handler);
         if (retval == -1)
         {
-          // TODO TODO TODO LIDAR COM COISAS ESTRANHAS
+          // TODO Lidar com erros estranhos na request
         }
+
+        LOG_WRITE("Pedido processado!");
+
         retval = file_check(handler, rootdir, strlen(rootdir));
         if (retval == 0)
         {
           handler->answer_size = build_header(handler);
           handler->output = handler->answer;
           handler->state = HEADER_SENDING;
+          LOG_WRITE("Enviando Headers...");
         }
         else
         {
@@ -471,14 +481,12 @@ int main(int argc, char *argv[])
           handler->answer_size = build_header(handler);
           handler->output = handler->answer;
           handler->state = ERROR_HEADER_SENDING;
+          LOG_WRITE("Enviando Header de erro...");
         }
-
         prepare_msg_to_send(handler);
-        LOG_WRITE("Arquivo processado!");
         break;
 
       case HEADER_SENDING:
-        LOG_WRITE("Enviando Headers...");
         if (FD_ISSET(handler->client, &writefds))
         {
           retval = keep_sending_msg(handler);
@@ -490,7 +498,7 @@ int main(int argc, char *argv[])
         break;
 
       case HEADER_SENT:
-        LOG_WRITE("Header enviado");
+        LOG_WRITE("Header enviado!");
         handler->output = handler->filebuff;
         start_sending_file(handler);
         handler->state           = FILE_SENDING;
@@ -498,6 +506,7 @@ int main(int argc, char *argv[])
         handler->filesize_sent   = 0;
         handler->timer_sizesent  = 0;
         timer_start(&(handler->timer));
+        LOG_WRITE("Enviando arquivo...");
         break;
 
       case FILE_SENDING:
@@ -506,10 +515,7 @@ int main(int argc, char *argv[])
         {
           retval = receive_message(handler);
           if (retval != 0)
-          {
             handler->state = FINISHED;
-            printf("Cliente desconectou!\n");fflush(stdout);
-          }
         }
 
         // Continuar mandando arquivo
@@ -555,7 +561,9 @@ int main(int argc, char *argv[])
             {
               // Pra poupar processamento, tirar cliente do select()
               FD_CLR(handler->client, &total_writefds);
-printf("Vamos pausar o cliente %d\n", handler->client);fflush(stdout);
+
+              VERBOSE(printf("Pausar o envio de arquivo para cliente %d\n", handler->client));
+
               if (maxfds == handler->client)
               {
                 if (handler_list.current == 1)
@@ -582,7 +590,7 @@ printf("Vamos pausar o cliente %d\n", handler->client);fflush(stdout);
           // Ja passou de 1 segundo
           else
           {
-            printf ("Velocidade: %.2f Bytes/s para o cliente %d\n", (handler->timer_sizesent / delta), handler->client);fflush (stdout);
+            VERBOSE(printf ("Velocidade: %.2f Bytes/s para o cliente %d\n", (handler->timer_sizesent / delta), handler->client));
             timer_start(&(handler->timer));
             handler->timer_sizesent = 0;
 
@@ -602,7 +610,7 @@ printf("Vamos pausar o cliente %d\n", handler->client);fflush(stdout);
         break;
 
       case FILE_SENT:
-        LOG_WRITE("Arquivo enviado");
+        LOG_WRITE("Arquivo enviado!");
         stop_sending_file(handler);
         handler->state = FINISHED;
         break;
@@ -610,7 +618,6 @@ printf("Vamos pausar o cliente %d\n", handler->client);fflush(stdout);
       case ERROR_HEADER_SENDING:
         if (FD_ISSET(handler->client, &writefds))
         {
-          LOG_WRITE("Enviando Header de erro");
           retval = keep_sending_msg(handler);
           if (retval == 0)
             handler->state = ERROR_HEADER_SENT;
