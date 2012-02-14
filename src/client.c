@@ -17,13 +17,34 @@
 
 #include "client.h"
 #include "http.h"
-#include "verbose_macro.h"
+#include "macros.h"
 
 #define H_ANSWER     0
 #define H_ERROR      1
 #define PROTOCOL     "HTTP/1.0"
 
 #define PACKAGE_NAME PACKAGE"/"VERSION
+
+
+/** Adiciona 'orig' a string 'dest' a partir do final, respeitando o limite
+ *  de 'size'.
+ *
+ *  @note 'size' e o tamanho TOTAL de 'dest' - nao pode ser o tamanho restante!
+ */
+static int append(char* dest, char* orig, size_t size)
+{
+  int origsize = strlen(orig);
+  int destsize = strlen(dest);
+  int remaining = size - destsize;
+
+  if (origsize < remaining)
+  {
+    strncat(dest, orig, remaining);
+    return 0;
+  }
+  else
+    return -1;
+}
 
 
 /** Inicializa as variaveis internas de 'l', como o numero maximo
@@ -225,6 +246,7 @@ int receive_message(struct c_handler* h)
   int  buffer_size = BUFFER_SIZE;
   int  retval;
 
+  // Para simular leitura lenta
   //~ usleep(200000);
   retval = recv(h->client, buffer, buffer_size, 0);
   if (retval == -1)
@@ -520,7 +542,7 @@ int get_file_chunk(struct c_handler* h)
  */
 int build_error_html(struct c_handler* h)
 {
-  int size = get_http_status_msg(h->filestatus, h->filestatusmsg, BUFFER_SIZE);
+  int size = http_get_status_msg(h->filestatus, h->filestatusmsg, BUFFER_SIZE);
   int n;
 
 
@@ -547,19 +569,34 @@ int parse_request(struct c_handler* h)
   char buff[BUFFER_SIZE];
   char *method;
   char *filename;
-  char *http_version;
+  char *version;
 
   strncpy(buff, h->request, BUFFER_SIZE);
 
   method = strtok(buff, " ");
   filename = strtok(NULL, " ");
-  http_version = strtok(NULL, "\r\n");
+  version = strtok(NULL, "\r\n");
 
-  if (strcmp(method, "GET") != 0)
+  switch(http_what_method(method, strlen(method)))
+  {
+  case GET_M:
+    // pode continuar
+    break;
+  default:
     return -1;
-  if ((strcmp(http_version, "HTTP/1.0") != 0) &&
-      (strcmp(http_version, "HTTP/1.1") != 0))
+    break;
+  }
+
+  switch(http_what_version(version, strlen(version)))
+  {
+  case HTTP_1_0:
+  case HTTP_1_1:
+    // pode continuar
+    break;
+  default:
     return -1;
+    break;
+  }
 
   strncat(h->filepath, filename, BUFFER_SIZE - strlen(h->filepath));
 
@@ -641,7 +678,10 @@ void get_new_maxfds(int* maxfds, struct c_handler_list* l, struct c_handler* h)
   while (tmp != NULL)
   {
     if (tmp != h)
-      *maxfds = bigger(tmp->client, *maxfds);
+    {
+      if (tmp->client > *maxfds)
+        *maxfds = tmp->client;
+    }
     tmp = tmp->next;
   }
 }

@@ -17,19 +17,17 @@
 
 struct c_handler_list
 {
-  int current;             /**< Quantos handlers estao servindo clientes agora */
-  int max;                 /**< Maximo de handlers possiveis ao mesmo tempo */
-
-  struct timeval *smaller_timeout;  /**< Menor timeout para sair do select() */
-  struct timeval  onesec_timeout;   /**< Guarda 'um segundo' para comparacao */
-
-  struct c_handler *begin; /**< Primeiro handler na lista */
-  struct c_handler *end;   /**< Ultimo handler na lista */
+  int current;  /**< Quantos handlers estao servindo clientes agora */
+  int max;      /**< Maximo de handlers possiveis ao mesmo tempo */
+  struct timeval *smaller_timeout; /**< Menor timeout para sair do select() */
+  struct timeval onesec_timeout;  /**< Guarda 'um segundo' para comparacao */
+  struct c_handler *begin;  /**< Primeiro handler na lista */
+  struct c_handler *end;    /**< Ultimo handler na lista */
 };
 
 struct c_handler
 {
-  struct c_handler *next;        /**< Proximo handler na lista */
+  struct c_handler *next; /**< Proximo handler na lista */
 
   int  client;                   /**< Socket do cliente servido. */
   int  state;                    /**< Estado em que se encontra o handler */
@@ -38,7 +36,6 @@ struct c_handler
   char filepath[BUFFER_SIZE];    /**< Localizacao do arquivo que o cliente solicitou. */
   int  filestatus;               /**< Indica se o arquivo existe ou qual erro esta associado a ele.
                                    *  Seus valores sao os mesmos da especificacao HTTP (status codes). */
-
   char filestatusmsg[BUFFER_SIZE]; /**< Mensagem equivalente ao status do arquivo. */
   int  filestatusmsg_size;         /**< O tamanho da mensagem de status do arquivo. */
 
@@ -62,24 +59,34 @@ struct c_handler
 
   char *output;      /**< Ponteiro que vai indicar o que vai ser enviado - o erro ou o header */
 
-  int need_file_chunk;           /** Flag que indica se precisa pegar um pedaco do arquivo. */
+  int need_file_chunk;           /**< Flag que indica se precisa pegar um pedaco do arquivo. */
 
-
-  int bandwidth;             /** Limite de banda - quantos bytes/segundo posso mandar por usuario */
-
-  int timer_sizesent;        /** Indica quanto foi mandado dentro de um intervalo */
-
-  struct timert timer;
-
-  struct timert cronometro; /** Vai subtrair o #timer a cada rodada do loop principal */
-
-  int waiting;
+  int bandwidth;             /**< Limite de banda - quantos bytes/segundo posso mandar por usuario */
+  int timer_sizesent;        /**< Indica quanto foi mandado dentro de um intervalo */
+  struct timert timer;       /**< */
+  struct timert cronometro; /**< Vai subtrair o #timer a cada rodada do loop principal */
+  int waiting;         /**< Indica se o cliente esta 'esperando' para receber dados entre segundos */
 };
 
 
 
 
-/** Todos os estados possiveis do c_handler.
+/*    Usando ASCIIDoc
+ *
+
+Eu sempre gostei de escrever READMEs com enfeites ASCII. Caixas com +*+, linhas com +=+...
+Daí quando tinha que passar essas informações para sites, eu fazia o HTML manualmente. Todos os +<br />+s,
++<tables>+ e +<h2>+. Nossa, como isso é chato. Tem vezes em que perco a concentração no texto e
+tenho que ver se tal tag se escreve dessa forma ou de outra...
+
+Quando vou postar no Wordpress tambem. Várias vezes eu quero postar pedaços de códigos
+mas não dá certo por causa de caracteres especiais como +<+ ou +>+.
+
+ *
+ */
+
+
+/** Todos os estados possiveis de c_handler.
  */
 enum states
 {
@@ -108,5 +115,6 @@ int build_header(struct c_handler* h);
 
 void get_new_smaller_timeout (struct c_handler_list* l, struct c_handler *h);
 void get_new_maxfds(int* maxfds, struct c_handler_list* l, struct c_handler* h);
+
 
 #endif /* CLIENT_H_DEFINED */

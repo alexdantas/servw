@@ -69,7 +69,8 @@ LIBS      =
 OBJ       = $(LOBJ)/server.o \
             $(LOBJ)/main.o   \
             $(LOBJ)/client.o \
-             $(LOBJ)/timer.o
+            $(LOBJ)/timer.o  \
+            $(LOBJ)/http.o
 DEFINES   = -DVERSION=\"$(VERSION)\" \
             -DDATE=\"$(DATE)\"       \
             -DPACKAGE=\"$(PACKAGE)\"

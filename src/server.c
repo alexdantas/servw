@@ -16,7 +16,7 @@
 #include <netdb.h>      /* gethostbyname()                           */
 
 #include "server.h"
-#include "verbose_macro.h"
+#include "macros.h"
 
 
 /** Efetua todo o trabalho de iniciar o servidor.

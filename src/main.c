@@ -19,7 +19,7 @@
 #include "client.h"
 #include "server.h"
 #include "http.h"
-#include "verbose_macro.h"
+#include "macros.h"
 #include "timer.h"
 
 #define MAX_CLIENTS  10
@@ -57,36 +57,9 @@ int handle_args(int argc, char* argv[])
 }
 
 
-/** Retorna o maior numbero, 'a' ou 'b'.
- */
-int bigger(int a, int b)
-{
-  if (a > b)
-    return a;
-  else
-    return b;
-}
 
 
-/** Adiciona 'orig' a string 'dest' a partir do final, respeitando o limite
- *  de 'size'.
- *
- *  @note 'size' e o tamanho TOTAL de 'dest' - nao pode ser o tamanho restante!
- */
-int append(char* dest, char* orig, size_t size)
-{
-  int origsize = strlen(orig);
-  int destsize = strlen(dest);
-  int remaining = size - destsize;
 
-  if (origsize < remaining)
-  {
-    strncat(dest, orig, remaining);
-    return 0;
-  }
-  else
-    return -1;
-}
 
 int find_crlf(char* where)
 {
@@ -96,42 +69,6 @@ int find_crlf(char* where)
     return 0;
   else
     return 1;
-}
-
-
-/** Armazena a mensagem de status HTTP equivalente ao numero 'status'
- *  em 'buff', respeitando 'buffsize'.
- *
- *  @return O tamanho da string de mensagem.
- */
-int get_http_status_msg(int status, char* buff, size_t buffsize)
-{
-  switch (status)
-  {
-  case OK:
-    strncpy(buff, "OK", buffsize);
-    break;
-
-  case BAD_REQUEST:
-    strncpy(buff, "Bad Request", buffsize);
-    break;
-  case FORBIDDEN:
-    strncpy(buff, "Forbidden", buffsize);
-    break;
-  case NOT_FOUND:
-    strncpy(buff, "Not Found", buffsize);
-    break;
-
-  case SERVER_ERROR:
-    strncpy(buff, "Server Error", buffsize);
-    break;
-
-  default:
-    strncpy(buff, "Unknown Status Code", buffsize);
-    break;
-  }
-
-  return strlen(buff);
 }
 
 
@@ -374,7 +311,8 @@ int main(int argc, char *argv[])
         continue;
       }
 
-      maxfds = bigger(new_client, maxfds);
+      if (new_client > maxfds)
+        maxfds = new_client;
       FD_SET(new_client, &total_readfds);
       FD_SET(new_client, &total_writefds);
       LOG_WRITE("*** Nova conexao de cliente aceita! ***");
@@ -401,7 +339,8 @@ int main(int argc, char *argv[])
         {
           VERBOSE(printf("Continuar a enviar arquivo para cliente %d\n", handler->client));
           FD_SET(handler->client, &total_writefds);
-          maxfds = bigger(handler->client, maxfds);
+          if (handler->client > maxfds)
+            maxfds = handler->client;
 
           if (handler_list.smaller_timeout == &(handler->timer.delta))
           {
@@ -463,7 +402,7 @@ int main(int argc, char *argv[])
         retval = parse_request(handler);
         if (retval == -1)
         {
-          // TODO Lidar com erros estranhos na request
+          // TODO Lidar com metodos/versoes incompativeis na request
         }
 
         LOG_WRITE("Pedido processado!");

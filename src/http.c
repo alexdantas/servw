@@ -14,6 +14,7 @@
 
 #define PROTOCOL "HTTP/1.0"
 
+#ifdef TENHO_QUE_CONSERTAR_ISSO_DEPOIS
 
 /** Constroi e atribui o header HTTP ao 'buf' (respeitando 'bufsize').
  *
@@ -77,58 +78,106 @@ int build_error(char* buf, size_t bufsize, int status)
   return n;
 }
 
+#endif
 
 
-/** Processa 'header', armazena o nome RELATIVO do arquivo em 'buf'
- *  (limitado por 'bufsize') e retorna se o 'header' esta incompleto ou nao.
+/** Retorna o valor do metodo presente em #method.
  *
- *  @return Quantos caracteres foram efetivamente copiados para 'buf'
- *          em caso de sucesso; -1 em caso de header/buffer com erros.
- *  @warning O unico metodo suportado e GET.
+ *  @note Os valores retornados estao definidos em http.h (enum methods).
  */
-int get_filename(char* header, char* buf, size_t bufsize)
+int http_what_method(char *method, size_t size)
 {
-  char* start;
-  char* end;
-  int   filenamesize;
+  switch(size)
+  {
+  case 3:
+    if (strncmp(method, "GET", 3) == 0)
+      return GET_M;
+    if (strncmp(method, "PUT", 3) == 0)
+      return PUT_M;
+    break;
 
-  if ((header == NULL) || (buf == NULL))
-    return -1;
+  case 4:
+    if (strncmp(method, "HEAD", 4) == 0)
+      return HEAD_M;
+    if (strncmp(method, "POST", 4) == 0)
+      return POST_M;
+    break;
 
-  start = header;
+  case 5:
+    if (strncmp(method, "TRACE", 5) == 0)
+      return TRACE_M;
+    break;
 
-  while(!isblank(*start))
-    start++;
+  case 6:
+    if (strncmp(method, "DELETE", 6) == 0)
+      return DELETE_M;
+    break;
 
-  while(isblank(*start))
-    start++;
+  case 7:
+    if (strncmp(method, "OPTIONS", 7) == 0)
+      return OPTIONS_M;
+    if (strncmp(method, "CONNECT", 7) == 0)
+      return CONNECT_M;
+    break;
 
-  end = start;
-
-  while(!isblank(*end))
-    end++;
-
-  filenamesize = (strlen(start) - strlen(end));
-
-  if (filenamesize > bufsize)
-    filenamesize = bufsize;
-
-  strncpy(buf, start, filenamesize);
-
-  return filenamesize;
+  default:
+    break;
+  }
+  return UNKNOWN_M;
 }
 
 
-/** Indica se o metodo 'GET' esta presente em 'header'.
- *
- *  @return Nao-zero se o metodo 'GET' esta presente, 0 se nao esta.
- */
-int is_get_method(char *header)
+int http_what_version(char *string, size_t size)
 {
-  if (strncmp(header, "GET ", 4) == 0)
-    return 1;
-  else
-    return 0;
+  switch(size)
+  {
+  case 8:
+    if (strcmp(string, "HTTP/1.0") == 0)
+      return HTTP_1_0;
+    if (strcmp(string, "HTTP/1.1") == 0)
+      return HTTP_1_1;
+    break;
+
+  default:
+    break;
+  }
+  return UNKNOWN_V;
+}
+
+
+/** Armazena a mensagem de status HTTP equivalente ao numero 'status'
+ *  em 'buff', respeitando 'buffsize'.
+ *
+ *  @return O tamanho da string de mensagem.
+ */
+int http_get_status_msg(int status, char* buff, size_t buffsize)
+{
+  switch (status)
+  {
+  case OK:
+    strncpy(buff, "OK", buffsize);
+    break;
+
+  case BAD_REQUEST:
+    strncpy(buff, "Bad Request", buffsize);
+    break;
+  case FORBIDDEN:
+    strncpy(buff, "Forbidden", buffsize);
+    break;
+  case NOT_FOUND:
+    strncpy(buff, "Not Found", buffsize);
+    break;
+
+  case SERVER_ERROR:
+    strncpy(buff, "Server Error", buffsize);
+    break;
+
+  default:
+    strncpy(buff, "Unknown Status Code", buffsize);
+    break;
+  }
+
+  return strlen(buff);
 }
 
 

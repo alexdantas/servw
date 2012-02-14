@@ -1,5 +1,5 @@
-
-/* Macro para tornar mais facil escrever dados nos logs.
+/** @file macros.h
+ *  Macros para tornar mais facil escrever dados nos logs.
  *
  * Log normal:   stdout
  * Log de errro: stderr
