@@ -190,22 +190,22 @@ int main(int argc, char *argv[])
   set_signals();
 
   memset(rootdir, '\0', BUFFER_SIZE);
-  rootdirsize = BUFFER_SIZE;
+  rootdirsize = 0;
   if (argv[2][0] == '/')
   {
     // Caminho absoluto
-    strncpy(rootdir, argv[2], rootdirsize - 1);
-    rootdirsize -= strlen(argv[2]);
+    strncpy(rootdir, argv[2], (BUFFER_SIZE - 1));
+    rootdirsize = strlen(argv[2]);
   }
   else
   {
     // Caminho relativo
-    strncpy(rootdir, getenv("PWD"), rootdirsize - 1);
-    rootdirsize -= strlen (getenv("PWD"));
-    rootdir[strlen(rootdir)] = '/';
-    rootdirsize--;
-    strncat(rootdir, argv[2], rootdirsize - 1);
+    strncpy(rootdir, getenv("PWD"), (BUFFER_SIZE - 1));
     rootdirsize = strlen (rootdir);
+    rootdir[rootdirsize] = '/';
+    rootdirsize++;
+    strncat(rootdir, argv[2], (BUFFER_SIZE - 1) - rootdirsize);
+    rootdirsize += strlen (argv[2]);
   }
 
   // Expandir os symbolic links do diretorio root
@@ -217,7 +217,8 @@ int main(int argc, char *argv[])
       perror("Erro em realpath()");
     exit(EXIT_FAILURE);
   }
-  strncpy(rootdir, buffer, rootdirsize - 1);
+  strncpy(rootdir, buffer, (BUFFER_SIZE - 1));
+  rootdirsize = strlen(rootdir);
   printf("Diretorio raiz: %s\n", rootdir);
 
   // server_start -  muito importante!
@@ -241,7 +242,7 @@ int main(int argc, char *argv[])
   c_handler_list_init(&handler_list, MAX_CLIENTS);
   if (handler_list.max > FD_SETSIZE)
   {
-    LOG_WRITE_ERROR("O maximo de clientes permitido por select() e FD_SETSIZE");
+    LOG_ERROR("O maximo de clientes permitido por select() e FD_SETSIZE");
     exit(EXIT_FAILURE);
   }
 
@@ -284,7 +285,7 @@ int main(int argc, char *argv[])
 
       if (handler_list.current > handler_list.max)
       {
-        LOG_WRITE_ERROR("Limite de clientes excedido!");
+        LOG_ERROR("Limite de clientes excedido!");
         continue;
       }
 
@@ -295,7 +296,7 @@ int main(int argc, char *argv[])
         continue;
       }
 
-      retval = c_handler_init(&handler, new_client, rootdir, atoi(argv[3]));
+      retval = c_handler_init(&handler, new_client, rootdir, rootdirsize, atoi(argv[3]));
       if (retval == -1)
       {
         perror("Erro em c_handler_init()");
@@ -306,7 +307,7 @@ int main(int argc, char *argv[])
       retval = c_handler_add(handler, &handler_list);
       if (retval == -1)
       {
-        LOG_WRITE_ERROR("Erro em c_handler_add()");
+        LOG_ERROR("Erro em c_handler_add()");
         close(new_client);
         continue;
       }
@@ -327,6 +328,7 @@ int main(int argc, char *argv[])
     handler = handler_list.begin;
     while (handler != NULL)
     {
+      /* Lidar com quem esta esperando */
       if (handler->waiting == 1)
       {
         timer_stop(&(handler->cronometro));
@@ -360,7 +362,7 @@ int main(int argc, char *argv[])
       /* Maquina de estados dos c_handlers */
       switch (handler->state)
       {
-      case MSG_RECEIVING:
+      case HEADER_RECEIVING:
         /** @todo @bug @warning
          *  Caso o cliente conecte mas tenha um 'lag', o FD_ISSET do readfds
          *  nao vai dar.
@@ -371,7 +373,7 @@ int main(int argc, char *argv[])
          */
         if (FD_ISSET(handler->client, &readfds))
         {
-          retval = receive_message(handler);
+          retval = receive_request(handler);
           if (retval == -1)
           {
             LOG_WRITE("Erro de conexao com cliente!");
@@ -382,78 +384,180 @@ int main(int argc, char *argv[])
             LOG_WRITE("Cliente desconectou");
             handler->state = FINISHED;
           }
-        }
-        else
-        {
+
+          // tomar diferentes acoes baseado no metodo
+          // (continuar recebendo dados ou nao)
           if (find_crlf(handler->request))
-            handler->state = MSG_RECEIVED;
+          {
+            switch (http_what_method(handler->request, handler->request_size))
+            {
+            case GET_M:
+              handler->state = REQUEST_RECEIVED;
+              break;
+            case PUT_M:
+              handler->state = BODY_RECEIVING;
+              break;
+            case UNKNOWN_M:
+              // mandar mensagem de erro (wtf)
+              break;
+            default:
+              // mandar mensagem de erro (metodo nao suportado)
+              break;
+            }
+
+          }
         }
         break;
 
-      case MSG_RECEIVED:
+      case BODY_RECEIVING:
+        //put - vou implementar depois
+
+        break;
+
+      case REQUEST_RECEIVED:
         LOG_WRITE("Mensagem recebida!");
-        handler->request_size = strlen(handler->request);
-        handler->state = FILE_PROCESSING;
+        handler->state = REQUEST_ANALYZE;
         break;
 
-      case FILE_PROCESSING:
-        LOG_WRITE("Processando pedido...");
-
-        retval = parse_request(handler);
-        if (retval == -1)
+      case REQUEST_ANALYZE:
+        LOG_WRITE("Analisando pedido...");
+        parse_request(handler);
+        switch (http_what_method(handler->request, handler->request_size))
         {
-          // TODO Lidar com metodos/versoes incompativeis na request
+        case GET_M:
+          handler->state = GET_CHECK_FILE;
+          break;
+        case PUT_M:
+          handler->state = PUT_CHECK_FILE;
+          break;
+        case UNKNOWN_M:
+          // mandar mensagem de erro (wtf)
+          break;
+        default:
+          // mandar mensagem de erro (metodo nao suportado)
+          break;
+        }
+        break;
+
+      case GET_CHECK_FILE:
+        //checar arquivo handler->filepath
+        retval = resolve_symlinks(handler->filepath, handler->filepathsize);
+        if (http_status_is_error(retval))
+        {
+          handler->filestatus = retval;
+          handler->state = ERROR_HANDLE;
+          break;
         }
 
-        LOG_WRITE("Pedido processado!");
-
-        retval = file_check(handler, rootdir, strlen(rootdir));
-        if (retval == 0)
+        retval = check_path(handler->filepath, rootdir, rootdirsize);
+        if (http_status_is_error(retval))
         {
-          handler->answer_size = build_header(handler);
-          handler->output = handler->answer;
-          handler->state = HEADER_SENDING;
-          LOG_WRITE("Enviando Headers...");
+          handler->filestatus = retval;
+          handler->state = ERROR_HANDLE;
+          break;
+        }
+
+        if (check_file_is_dir(handler->filepath))
+        {
+          retval = append_index_html(handler->filepath, handler->filepathsize);
+          if (retval == -1)
+          {
+            // buffer overflow, nao da pra anexar...
+          }
+        }
+
+        retval = check_file(handler->filepath);
+        if (http_status_is_error(retval))
+        {
+          handler->filestatus = retval;
+          handler->state = ERROR_HANDLE;
+          break;
+        }
+
+        // se chegou ate aqui, significa que nao tem erros! \o/
+        handler->filestatus = OK_S;
+        handler->filetype_size = http_get_file_type(handler->filepath, handler->filepathsize, handler->filetype, BUFFER_SIZE);
+        handler->state = HEADER_PREPARE;
+        break;
+
+      case ERROR_HANDLE:
+
+        strncpy(handler->filetype, "text/html", BUFFER_SIZE);
+        handler->state = HEADER_PREPARE;
+        break;
+
+      case HEADER_PREPARE:
+        handler->filestatusmsg_size = http_get_status_msg(handler->filestatus, handler->filestatusmsg, BUFFER_SIZE);
+
+        if (http_status_is_error(handler->filestatus))
+        {
+          handler->error_html_size = build_error_html(handler->error_html, BUFFER_SIZE, handler->filestatus, handler->filestatusmsg);
+          handler->filesize = handler->error_html_size;
         }
         else
         {
-          handler->fileerrorsize = build_error_html(handler);
-          handler->answer_size = build_header(handler);
-          handler->output = handler->answer;
-          handler->state = ERROR_HEADER_SENDING;
-          LOG_WRITE("Enviando Header de erro...");
+          handler->filesize = get_file_size(handler->filepath);
         }
-        prepare_msg_to_send(handler);
-        break;
 
-      case HEADER_SENDING:
-        if (FD_ISSET(handler->client, &writefds))
+        handler->answer_header_size = http_build_header(handler);
+
+        FILE *fp = fmemopen(handler->answer_header, handler->answer_header_size, "r");
+        if (fp == NULL)
         {
-          retval = keep_sending_msg(handler);
-          if (retval == 0)
-            handler->state = HEADER_SENT;
-          if (retval == -1)
-            handler->state = FINISHED;
+          //errno
         }
+
+        open_file(handler, fp, handler->answer_header_size);
+
+        handler->state = FILE_SENDING;
+        handler->next_state = FILE_PREPARE;
+        handler->timer_sizesent = 0;
+        timer_start(&(handler->timer));
+        LOG_WRITE("Enviando Header...");
         break;
 
-      case HEADER_SENT:
-        LOG_WRITE("Header enviado!");
-        handler->output = handler->filebuff;
-        start_sending_file(handler);
-        handler->state           = FILE_SENDING;
-        handler->need_file_chunk = 1;
-        handler->filesize_sent   = 0;
-        handler->timer_sizesent  = 0;
+      case FILE_PREPARE:
+
+        if (http_status_is_error(handler->filestatus))
+        {
+          handler->filep = fmemopen(handler->error_html, handler->error_html_size, "r");
+          if (handler->filep == NULL)
+          {
+            LOG_PERROR("Erro em main()->FILE_PREPARE->fmemopen()");
+            handler->state = FINISHED;
+            break;
+          }
+        }
+        else
+        {
+          handler->filep = fopen(handler->filepath, "r");
+          if (handler->filep == NULL)
+          {
+            LOG_PERROR("Erro em main()->FILE_PREPARE->fopen()");
+            handler->state = FINISHED;
+            break;
+          }
+        }
+
+        open_file(handler, handler->filep, handler->filesize);
+
+        handler->state = FILE_SENDING;
+        handler->next_state = FINISHED;
+        handler->timer_sizesent = 0;
         timer_start(&(handler->timer));
-        LOG_WRITE("Enviando arquivo...");
+        LOG_WRITE("Enviando Arquivo...");
         break;
+
+      case PUT_CHECK_FILE:
+        //put - implementar depois
+        break;
+
 
       case FILE_SENDING:
         // Checar se o cliente desconectou
         if (FD_ISSET(handler->client, &readfds))
         {
-          retval = receive_message(handler);
+          retval = receive_request(handler);
           if (retval != 0)
             handler->state = FINISHED;
         }
@@ -465,14 +569,17 @@ int main(int argc, char *argv[])
 
           if (handler->need_file_chunk == 1)
           {
-            retval = get_file_chunk(handler);
+            retval = get_chunk(handler);
             if (retval == -1)
             {
               LOG_WRITE("Erro na leitura do arquivo!");
               handler->state = FINISHED;
               break;
             }
-            prepare_msg_to_send(handler);
+            if (retval == 1)
+            {
+              //terminou de pegar do arquivo!
+            }
             handler->need_file_chunk = 0;
           }
 
@@ -482,7 +589,7 @@ int main(int argc, char *argv[])
           {
             if ((handler->timer_sizesent) < (handler->bandwidth))
             {
-              retval = keep_sending_msg(handler);
+              retval = send_chunk(handler);
               if (retval == -1)
               {
                 LOG_WRITE("Erro de conexao!");
@@ -494,7 +601,8 @@ int main(int argc, char *argv[])
                 handler->need_file_chunk = 1;
 
               handler->timer_sizesent += retval;
-              handler->filesize_sent  += retval;
+              handler->output_sizesent += retval;
+              handler->output_sizeleft -= retval;
             }
             // Ja mandei tudo o que podia mas ainda nao deu 1 segundo
             else
@@ -544,62 +652,19 @@ int main(int argc, char *argv[])
             }
           }
 
-          if (handler->filesize_sent >= handler->filesize)
+          if (handler->output_sizesent >= handler->output_size)
             handler->state = FILE_SENT;
         }
         break;
 
       case FILE_SENT:
-        LOG_WRITE("Arquivo enviado!");
-        stop_sending_file(handler);
-        handler->state = FINISHED;
-        break;
-
-      case ERROR_HEADER_SENDING:
-        if (FD_ISSET(handler->client, &writefds))
-        {
-          retval = keep_sending_msg(handler);
-          if (retval == 0)
-            handler->state = ERROR_HEADER_SENT;
-          else if (retval == -1)
-            handler->state = FINISHED;
-          else
-          {
-            //sending...
-          }
-        }
-        break;
-
-      case ERROR_HEADER_SENT:
-        LOG_WRITE("Header de erro enviado");
-        handler->output = handler->fileerror;
-        prepare_msg_to_send(handler);
-        handler->state = ERROR_SENDING;
-        break;
-
-      case ERROR_SENDING:
-        if (FD_ISSET(handler->client, &writefds))
-        {
-          LOG_WRITE("Enviando arquivo de erro");
-          retval = keep_sending_msg(handler);
-          if (retval == 0)
-            handler->state = ERROR_SENT;
-          if (retval == -1)
-            handler->state = FINISHED;
-
-          handler->fileerrorsize -= retval;
-
-          if (handler->fileerrorsize <= 0)
-            handler->state = ERROR_SENT;
-        }
-        break;
-
-      case ERROR_SENT:
-        LOG_WRITE("Arquivo de erro enviado");
-        handler->state = FINISHED;
+        LOG_WRITE("Enviado!");
+        close_file(handler);
+        handler->state = handler->next_state;
         break;
 
       case FINISHED:
+        close_file(handler);
         FD_CLR(handler->client, &total_writefds);
         FD_CLR(handler->client, &total_readfds);
 

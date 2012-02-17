@@ -19,33 +19,6 @@
 #include "http.h"
 #include "macros.h"
 
-#define H_ANSWER     0
-#define H_ERROR      1
-#define PROTOCOL     "HTTP/1.0"
-
-#define PACKAGE_NAME PACKAGE"/"VERSION
-
-
-/** Adiciona 'orig' a string 'dest' a partir do final, respeitando o limite
- *  de 'size'.
- *
- *  @note 'size' e o tamanho TOTAL de 'dest' - nao pode ser o tamanho restante!
- */
-static int append(char* dest, char* orig, size_t size)
-{
-  int origsize = strlen(orig);
-  int destsize = strlen(dest);
-  int remaining = size - destsize;
-
-  if (origsize < remaining)
-  {
-    strncat(dest, orig, remaining);
-    return 0;
-  }
-  else
-    return -1;
-}
-
 
 /** Inicializa as variaveis internas de 'l', como o numero maximo
  *  de clientes suportados simultaneamente, 'max_clients'.
@@ -85,7 +58,7 @@ int c_handler_list_init(struct c_handler_list* l, int max_clients)
  *
  *  @return 0 em sucesso, -1 caso 'h' seja NULL ou malloc() falhe.
  */
-int c_handler_init(struct c_handler** h, int sck, char* rootdir, int bandwidth)
+int c_handler_init(struct c_handler** h, int sck, char* rootdir, size_t rootdirsize, int bandwidth)
 {
   if ((h == NULL) || (*h != NULL))
     return -1;
@@ -96,21 +69,27 @@ int c_handler_init(struct c_handler** h, int sck, char* rootdir, int bandwidth)
 
   (*h)->next = NULL;
   (*h)->client = sck;
-  (*h)->state = MSG_RECEIVING;
+  (*h)->state = HEADER_RECEIVING;
 
-  memset(&((*h)->request),       '\0', BUFFER_SIZE);
-  memset(&((*h)->answer),        '\0', BUFFER_SIZE);
-  memset(&((*h)->fileerror),     '\0', BUFFER_SIZE);
+  memset(&((*h)->request),       '\0', BUFFER_SIZE * 3);
+  memset(&((*h)->outputbuff),    '\0', BUFFER_SIZE);
+  memset(&((*h)->answer_header), '\0', BUFFER_SIZE);
   memset(&((*h)->filepath),      '\0', BUFFER_SIZE);
   memset(&((*h)->filestatusmsg), '\0', BUFFER_SIZE);
+  memset(&((*h)->filetype),      '\0', BUFFER_SIZE);
 
-  (*h)->request_size = BUFFER_SIZE * 3;
+  (*h)->outputbuff_size      = 0;
+  (*h)->outputbuff_sizeleft = 0;
+  (*h)->outputbuff_sizesent = 0;
+
+  (*h)->request_size = 0;
   (*h)->output = NULL;
   (*h)->filep  = NULL;
 
-  (*h)->answer_size = BUFFER_SIZE;
+  (*h)->answer_header_size = BUFFER_SIZE;
 
   strncpy((*h)->filepath, rootdir, BUFFER_SIZE);
+  (*h)->filepathsize = rootdirsize;
   (*h)->filestatus = -1;
   (*h)->filesize   = -1;
   (*h)->bandwidth  = bandwidth;
@@ -237,10 +216,12 @@ void c_handler_exit(struct c_handler* h)
 
 /** Recebe a mensagem atraves de recv() de uma maneira nao-bloqueante
  *
+ *  Pega um pedaco e ja anexa ao #request
+ *
  *  @return 0 caso a mensagem esteja sendo recebida, -1 em caso de erro
  *          e 1 se a mensagem terminou de ser recebida.
  */
-int receive_message(struct c_handler* h)
+int receive_request(struct c_handler* h)
 {
   char buffer[BUFFER_SIZE];
   int  buffer_size = BUFFER_SIZE;
@@ -257,306 +238,16 @@ int receive_message(struct c_handler* h)
     return 1;
 
   buffer[retval] = '\0';
-  append(h->request, buffer, h->request_size);
+
+  if ((h->request_size + retval) > BUFFER_SIZE * 3)
+    return -1;
+
+  strncat(h->request, buffer, retval);
+
+  h->request_size += retval;
 
   return 0;
 }
-
-
-/** Checa se o arquivo descrito dentro de 'h' existe ou nao e atribui
- *  a 'h' a mensagem de erro correspondente.
- *
- *  Primeiro eu uso realpath() pra expandir todos os symbolic links do
- *  path recebido pelo cliente.
- *  Se o arquivo nao existir, independentemente se ele esteja fora do
- *  diretorio permitido como root, ele vai avisar que nao existe.
- *  Se o arquivo existir, mas estiver fora do diretorio permitido como
- *  root, ele vai avisar que esta fora do range.
- *  @n
- *  tl;dr E possivel um hacker saber quais arquivos existem fora do
- *        diretorio root, atraves de tentativa e erro.
- *
- *  @return 0 caso nao haja erro e -1 em algum erro
- */
-int file_check(struct c_handler* h, char* rootdir, int rootdirsize)
-{
-  struct stat st;
-  char   errormsg[BUFFER_SIZE];
-  char   buffer[BUFFER_SIZE];
-  int    errornum;
-  int    retval;
-
-
-  if (realpath(h->filepath, buffer) == NULL)
-  {
-    perror("Error at realpath()");
-    switch (errno)
-    {
-    case ENOENT:
-      sprintf(h->filestatusmsg, "File Not Found");
-      h->filestatus = NOT_FOUND;
-      break;
-    case EACCES:
-      sprintf(h->filestatusmsg, "Search permission denied on this directory");
-      h->filestatus = FORBIDDEN;
-      break;
-    default:
-      break;
-    }
-    return -1;
-  }
-  strncpy(h->filepath, buffer, BUFFER_SIZE);
-
-  if (strncmp(h->filepath, rootdir, rootdirsize) != 0)
-  {
-    sprintf(h->filestatusmsg, "Forbidden");
-    h->filestatus = FORBIDDEN;
-    return -1;
-  }
-
-  retval = stat(h->filepath, &st);
-  if (retval == -1)
-  {
-    switch (errno)
-    {
-    case EACCES:
-      sprintf(errormsg, "Search permission denied on this directory");
-      errornum = FORBIDDEN;
-      break;
-    case ENOTDIR:
-      sprintf(errormsg, "A component of the path is not a directory");
-      errornum = BAD_REQUEST;
-      break;
-    case ENOMEM:
-      sprintf(errormsg, "Out of Memory");
-      errornum = SERVER_ERROR;
-      break;
-    default:
-      sprintf(errormsg, "File Not Found");
-      errornum = NOT_FOUND;
-      break;
-    }
-    sprintf(h->filestatusmsg, "%s", errormsg);
-    h->filestatus = errornum;
-
-    return -1;
-  }
-
-  if (S_ISDIR(st.st_mode))
-  {
-    int length = strlen(h->filepath);
-
-    if (h->filepath[length] != '/')
-    {
-      append(h->filepath, "/", BUFFER_SIZE);
-    }
-    append(h->filepath, "index.html", BUFFER_SIZE);
-
-    //AGORA PRECISAMOS CHECAR NOVAMENTE!
-    //TODO TODO TODO BUG TODO
-
-    retval = stat(h->filepath, &st);
-    if (retval == -1)
-    {
-      switch (errno)
-      {
-      case EACCES:
-        sprintf(errormsg, "Search permission denied on this directory");
-        errornum = FORBIDDEN;
-        break;
-      case ENOTDIR:
-        sprintf(errormsg, "A component of the path is not a directory");
-        errornum = BAD_REQUEST;
-        break;
-      case ENOMEM:
-        sprintf(errormsg, "Out of Memory");
-        errornum = SERVER_ERROR;
-        break;
-      default:
-        sprintf(errormsg, "File Not Found");
-        errornum = NOT_FOUND;
-        break;
-      }
-      sprintf(h->filestatusmsg, "%s", errormsg);
-      h->filestatus = errornum;
-
-      return -1;
-    }
-  }
-
-  h->filestatus = OK;
-  sprintf(h->filestatusmsg, "OK");
-  h->filesize   = st.st_size;
-  h->filelastm  = st.st_mtime;
-
-  return 0;
-}
-
-
-/** Reseta os valores 'h->filebuffsize_left' e 'h->filebuffsize_sent' para indicar
- *  que vamos comecar a mandar um arquivo.
- *
- *  @warning A cada 'coisa' que formos enviar, temos que adicionar
- *           aqui. Por exemplo, vamos mandar um arquivo, um header
- *           ou uma mensagem de erro. Cada caso deve ser considerado
- *           aqui.
- */
-int prepare_msg_to_send(struct c_handler* h)
-{
-  if (h->output == NULL)
-    return -1;
-
-
-  if (h->output == h->fileerror)
-    h->filebuffsize_left = h->fileerrorsize;
-
-  else if (h->output == h->answer)
-    h->filebuffsize_left = h->answer_size;
-
-  else if (h->output == h->filebuff)
-    h->filebuffsize_left = h->filebuffsize;
-
-  else
-    h->filebuffsize_left = strlen(h->output);
-
-  h->filebuffsize_sent = 0;
-
-  return 0;
-}
-
-
-/** Continua enviando para h->client a mensagem apontada por h->output
- *  atraves de sockets nao-bloqueantes.
- *
- *  Essa funcao respeira o limite de h->bandwidth.
- *  Sempre enviamos o buffer de 'h->bandwidth' em 'h->bandwidth' ate que
- *  'h->filebuffsize_left' seja igual a zero.
- *
- *  @return O numero de caracteres enviados em caso de sucesso.
- *          Se houver algum erro fatal, retorna -1. Se o socket for
- *          bloquear, retorna -2.
- */
-int keep_sending_msg(struct c_handler* h)
-{
-  int size;
-  int retval;
-
-
-  if (h->filebuffsize_left == 0)
-    return 0;
-
-// limitar baseado no tamanho restante do buffer
-  if ((h->filebuffsize_left) > (h->bandwidth))
-    size = h->filebuffsize_left - (h->filebuffsize_left - h->bandwidth);
-  else
-    size = h->bandwidth - (h->bandwidth - h->filebuffsize_left);
-
-// limitar baseado no tamanho ja enviado ate agora
-  if ((h->timer_sizesent + size) > h->bandwidth)
-    size = (h->bandwidth - h->timer_sizesent);
-
-  retval = send(h->client, h->output + h->filebuffsize_sent, size, 0);
-
-  if (retval == -1)
-  {
-    if ((errno != EWOULDBLOCK) && (errno != EAGAIN))
-    {
-      perror("Error at send()");
-      return -1;
-    }
-    return -2;
-  }
-
-
-  h->filebuffsize_sent += retval;
-  h->filebuffsize_left -= retval;
-
-  return retval;
-}
-
-
-/** Abre o arquivo em 'h' para ser enviado
- *
- *  @return 0 em sucesso, -1 em caso de erro.
- */
-int start_sending_file(struct c_handler* h)
-{
-  h->filep = fopen(h->filepath, "r");
-  if (h->filep == NULL)
-    return -1;
-
-  return 0;
-}
-
-
-/** Fecha o arquivo aberto para o 'h'.
- *
- *  @return 0 em sucesso e -1 em caso de erro.
- */
-int stop_sending_file(struct c_handler* h)
-{
-  int retval = fclose(h->filep);
-  if (retval == EOF)
-    return -1;
-  h->filep = NULL;
-  return 0;
-}
-
-
-/** Pega um pedaco do arquivo e guarda no buffer dentro de 'h'.
- *
- *  @return 0 se pegar todo o pedaco do arquivo de uma vez, 1 se o arquivo
- *          terminou de ser lido e -1 em caso de erro.
- */
-int get_file_chunk(struct c_handler* h)
-{
-  int retval;
-
-  if (h->filep == NULL)
-    return -1;
-
-  memset(&(h->filebuff), '\0', BUFFER_SIZE);
-  retval = fread(h->filebuff, sizeof(char), BUFFER_SIZE - 1, h->filep);
-
-  h->filebuffsize         = retval;
-  h->filebuffsize_left    = retval;
-  h->filebuffsize_sent    = 0;
-
-  if (retval < (BUFFER_SIZE - 1))
-  {
-    if (feof(h->filep))
-      return 1;
-
-    if (ferror(h->filep))
-    {
-      LOG_WRITE("Error at fread()");
-      return -1;
-    }
-  }
-  return 0;
-}
-
-
-/** Constroi e armazena em 'h->fileerror' uma pagina HTML contendo
- *  o erro ocorrido.
- */
-int build_error_html(struct c_handler* h)
-{
-  int size = http_get_status_msg(h->filestatus, h->filestatusmsg, BUFFER_SIZE);
-  int n;
-
-
-  h->filestatusmsg_size = size;
-
-  n = snprintf(h->fileerror, BUFFER_SIZE,
-              "<html>\n<head>\n<title>Error %d</title>\n</head>\n<body>\n"
-              "<h3>Error %d - %s</h3>\n<hr><pre>%s</pre>"
-              "</body>\n</html>",
-              h->filestatus, h->filestatus, h->filestatusmsg, PACKAGE_NAME);
-
-  return n;
-}
-
 
 /** Separa as partes uteis da request HTTP enviada pelo usuario.
  *
@@ -598,57 +289,13 @@ int parse_request(struct c_handler* h)
     break;
   }
 
-  strncat(h->filepath, filename, BUFFER_SIZE - strlen(h->filepath));
+  strncat(h->filepath, filename, BUFFER_SIZE - h->filepathsize);
+  h->filepathsize += strlen(filename);
 
   return 0;
 }
 
 
-/** Constroi e atribui o header HTTP ao 'buf' (respeitando 'bufsize').
- *
- *  A mensagem e construida de acordo com os parametros.
- *  @todo Remover valores arbitrarios dos buffers.
- *  @return O numero de caracteres efetivamente atribuidos a 'buf'.
- */
-int build_header(struct c_handler* h)
-{
-  int n;
-
-  //~ char last_modif[BUFFER_SIZE];
-  //LIDAR COM O TEMPO!!!!!!
-  //strftime (timebuf)
-
-
-  if (h->filestatus == OK)
-  {
-    n = snprintf(h->answer, h->answer_size, "%s %d %s\r\n"
-                                            "Server: %s\r\n"
-                                            "Content-Type: %s\r\n"
-                                            "Content-Length: %d\r\n"
-                                            //~ "Last-Modified: %s"
-                                            "Connection: close\r\n"
-                                            "\r\n",
-                                            PROTOCOL, h->filestatus, h->filestatusmsg,
-                                            PACKAGE_NAME,
-                                            "text/html",
-                                            h->filesize);
-  }
-  else
-  {
-    n = snprintf(h->answer, h->answer_size, "%s %d %s\r\n"
-                                            "Server: %s\r\n"
-                                            "Content-Type: %s\r\n"
-                                            "Content-Length: %d\r\n"
-                                            "Connection: close\r\n"
-                                            "\r\n",
-                                            PROTOCOL, h->filestatus, h->filestatusmsg,
-                                            PACKAGE_NAME,
-                                            "text/html",
-                                            h->fileerrorsize);
-  }
-
-  return n;
-}
 
 
 
@@ -685,6 +332,281 @@ void get_new_maxfds(int* maxfds, struct c_handler_list* l, struct c_handler* h)
     tmp = tmp->next;
   }
 }
+
+
+/*
+ *
+ * open_file
+ * close_file
+ *
+ *
+ * h->output
+ * h->output_sizeleft
+ * h->output_sizesent
+ *
+ *
+ *
+ * get chunk
+ * prepare chunk
+ * send chunk
+ *
+ * h->outputbuff
+ * h->outputbuff_sizeleft
+ * h->outputbuff_sizesent
+ *
+ *
+ */
+
+/** Prepara o c_handler para enviar o arquivo #file.
+ *
+ *  Associa o #h->output para a stream #file.
+ *  @return Retorna 0 em sucesso, -1 caso algum argumento seja NULL.
+ */
+int open_file(struct c_handler *h, FILE *file, size_t size)
+{
+  if ((h == NULL) || (file == NULL))
+    return -1;
+
+  h->output = file;
+  h->output_size = size;
+  h->output_sizeleft = size;
+  h->output_sizesent = 0;
+  return 0;
+}
+
+/**
+ *  @return Retorna 0 em sucesso, -1 em caso de erro.
+ */
+int close_file(struct c_handler* h)
+{
+  if ((h->output == NULL) || (h == NULL))
+    return -1;
+
+  int retval = fclose(h->output);
+  if (retval == EOF)
+  {
+    LOG_PERROR("Erro em close_file() - fclose()");
+    return -1;
+  }
+  h->output = NULL;
+  return 0;
+}
+
+/** Le um pedaco do arquivo apontado por #h->output e armazena em
+ *  #h->outputbuff. O tamanho do buffer e #h->outputbuff_size.
+ *
+ *  @note Le o pedaco caractere por caractere (sizeof(char) x 1).
+ */
+int get_chunk(struct c_handler* h)
+{
+  int retval;
+
+  if ((h->output == NULL) || (h->outputbuff == NULL))
+    return -1;
+
+  memset(&(h->outputbuff), '\0', BUFFER_SIZE);
+  retval = fread(h->outputbuff, sizeof(char), BUFFER_SIZE - 1, h->output);
+
+  h->outputbuff_size     = retval;
+  h->outputbuff_sizeleft = retval;
+  h->outputbuff_sizesent = 0;
+
+  if (retval < (BUFFER_SIZE - 1))
+  {
+    // Acabou o arquivo!
+    if (feof(h->output))
+      return 1;
+
+    // Aghw
+    if (ferror(h->output))
+    {
+      LOG_PERROR("Erro em fread()");
+      return -1;
+    }
+  }
+  return 0;
+}
+
+/** Envia o pedaco de arquivo apontado por #h->outputbuff para o cliente
+ *  em #h->client.
+ *
+ *  @return O numero de caracteres enviados, -1 em caso de erro e 0 caso
+ *          ja tenha enviado tudo.
+ */
+int send_chunk(struct c_handler* h)
+{
+  int size;
+  int retval;
+
+
+  if ((h->output == NULL) || (h->outputbuff == NULL))
+    return -1;
+
+  if (h->output_sizeleft == 0)
+    return 0;
+
+  // limitar baseado no tamanho restante do buffer
+  if ((h->outputbuff_sizeleft) > (h->bandwidth))
+    size = h->outputbuff_sizeleft - (h->outputbuff_sizeleft - h->bandwidth);
+  else
+    size = h->bandwidth - (h->bandwidth - h->outputbuff_sizeleft);
+
+  // limitar baseado no tamanho ja enviado ate agora
+  if ((h->timer_sizesent + size) > h->bandwidth)
+    size = (h->bandwidth - h->timer_sizesent);
+
+  retval = send(h->client, h->outputbuff + h->outputbuff_sizesent, size, 0);
+
+  if (retval == -1)
+  {
+    if ((errno != EWOULDBLOCK) && (errno != EAGAIN))
+    {
+      perror("Error at send()");
+      return -1;
+    }
+    // bloqueou
+    return -2;
+  }
+
+
+  h->outputbuff_sizesent += retval;
+  h->outputbuff_sizeleft -= retval;
+
+  return retval;
+}
+
+/** Modifica #path para uma string com o caminho absoluto e canonico.
+ *
+ *  @note Exemplos sao '../', './', '../../././' e '///'.
+ *
+ */
+int resolve_symlinks(char *path, size_t size)
+{
+  char buffer[BUFFER_SIZE];
+
+  if (path == NULL)
+    return -1;
+
+  if (realpath(path, buffer) == NULL)
+  {
+    LOG_PERROR("Erro em resolve_symlinks() - realpath()");
+    switch (errno)
+    {
+    case ENOENT:
+      return NOT_FOUND_S;
+    case EACCES:
+      return FORBIDDEN_S;
+    case ENAMETOOLONG:
+      return REQUEST_URI_TOO_LARGE_S;
+
+    default:
+      return SERVER_ERROR_S;
+    }
+    return -1;
+  }
+  strncpy(path, buffer, size);
+  return OK_S;
+}
+
+
+/** Verifica se #path esta dentro de #rootdir.
+ *
+ *  @return #status_codes HTTP com o erro encontrado.
+ */
+int check_path(char *path, char *rootdir, size_t rootdirsize)
+{
+  if (strncmp(path, rootdir, rootdirsize) != 0)
+    return FORBIDDEN_S;
+
+  return OK_S;
+}
+
+/** Verifica se o arquivo existe e se e permitido localiza-lo.
+ *
+ *  @return #status_codes HTTP com o erro encontrado.
+ */
+int check_file(char *path)
+{
+  struct stat st;
+
+  if (stat(path, &st) == -1)
+  {
+    LOG_PERROR("Erro em check_file() - stat()");
+    switch (errno)
+    {
+    case ENOENT:
+      return NOT_FOUND_S;
+    case EACCES:
+      return FORBIDDEN_S;
+    case ENOTDIR:
+      return BAD_REQUEST_S;
+    case ENAMETOOLONG:
+      return REQUEST_URI_TOO_LARGE_S;
+    default:
+      return SERVER_ERROR_S;
+    }
+  }
+  return OK_S;
+}
+
+/** Verifica se #path e um diretorio.
+ *
+ *  @return Caso #path seja um diretorio, retorna 1. Se nao for, retorna 0.
+ *          Retorna -1 em caso de erro.
+ */
+int check_file_is_dir(char *path)
+{
+  struct stat st;
+
+  if (stat(path, &st) == -1)
+  {
+    LOG_PERROR("Erro em check_file_is_dir() - stat()");
+    return -1;
+  }
+  return S_ISDIR(st.st_mode);
+}
+
+int get_file_size(char *path)
+{
+  struct stat st;
+
+  if (stat(path, &st) == -1)
+  {
+    LOG_PERROR("Erro em check_file() - stat()");
+    return -1;
+  }
+
+  return st.st_size;
+}
+
+
+/** Anexa a string "index.html" ao #h->filepath.
+ *
+ *  @return 0 em sucesso, -1 caso nao caiba.
+ */
+int append_index_html(char *path, size_t pathsize)
+{
+  char *index_html = "index.html";
+
+  size_t indexsize = strlen(index_html);
+
+  if (path[pathsize] != '/')
+  {
+    if ((pathsize + 1) >= BUFFER_SIZE)
+      return -1;
+
+    path[pathsize + 1] = '/';
+  }
+
+  if ((pathsize + indexsize) >= BUFFER_SIZE)
+    return -1;
+
+  strncat(path, index_html, pathsize);
+  return 0;
+}
+
+
+
 
 
 

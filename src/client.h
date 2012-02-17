@@ -4,6 +4,7 @@
  * Definicao de procedimentos relacionados a servir clientes.
  */
 
+#include <stdio.h>
 #include <time.h>
 #include "timer.h"
 
@@ -31,9 +32,14 @@ struct c_handler
 
   int  client;                   /**< Socket do cliente servido. */
   int  state;                    /**< Estado em que se encontra o handler */
+  int  bandwidth;                /**< Limite de banda - quantos bytes/segundo posso mandar por usuario */
+
   char request[BUFFER_SIZE * 3]; /**< Toda a request HTTP solicitada pelo cliente. */
   int  request_size;             /**< Tamanho de caracteres que 'request' suporta. */
+
   char filepath[BUFFER_SIZE];    /**< Localizacao do arquivo que o cliente solicitou. */
+  int  filepathsize;
+
   int  filestatus;               /**< Indica se o arquivo existe ou qual erro esta associado a ele.
                                    *  Seus valores sao os mesmos da especificacao HTTP (status codes). */
   char filestatusmsg[BUFFER_SIZE]; /**< Mensagem equivalente ao status do arquivo. */
@@ -41,31 +47,33 @@ struct c_handler
 
   FILE*  filep;                  /**< Arquivo que o cliente pede */
   int    filesize;               /**< Tamanho do arquivo solicitado*/
-  int    filesize_sent;          /**< Tamanho que ja foi enviado do arquivo como um todo */
+  char   filetype[BUFFER_SIZE];  /**< O MIME-type do arquivo */
+  int    filetype_size;          /**< Tamanho do MIME-type do arquivo */
   time_t filelastm;              /**< Data de ultima modificacao do arquivo */
 
-  char filebuff[BUFFER_SIZE];    /**< Buffer onde serao guardadas partes temporarias do arquivo */
-  int  filebuffsize;
+  char answer_header[BUFFER_SIZE];     /**< Header a ser enviado como resposta ao cliente, antes do arquivo */
+  int  answer_header_size;             /**< O tamanho total do header */
 
-  char answer[BUFFER_SIZE];     /**< Header a ser enviado como resposta ao cliente, antes do arquivo */
-  int  answer_size;             /**< O tamanho total do header */
+  FILE* output;
+  int   output_size;
+  int   output_sizeleft;
+  int   output_sizesent;
+  char  outputbuff[BUFFER_SIZE];
+  int   outputbuff_size;
+  int   outputbuff_sizeleft;
+  int   outputbuff_sizesent;
 
-  int filebuffsize_left;        /**< Quanto de um pedaco do arquivo ainda precisa ser enviado ao cliente. */
-  int filebuffsize_sent;        /**< Quanto de um pedaco do arquivo ja foi enviado ao cliente. */
-
-  char fileerror[BUFFER_SIZE]; /** Se houver algum erro relacionado ao arquivo, sua mensagem estara
-                                 *  aqui (no formato de pagina HTML) para ser enviada ao cliente. */
-  int fileerrorsize;           /**< Tamanho da pagina HTML de erro */
-
-  char *output;      /**< Ponteiro que vai indicar o que vai ser enviado - o erro ou o header */
+  char error_html[BUFFER_SIZE];
+  int  error_html_size;
 
   int need_file_chunk;           /**< Flag que indica se precisa pegar um pedaco do arquivo. */
 
-  int bandwidth;             /**< Limite de banda - quantos bytes/segundo posso mandar por usuario */
   int timer_sizesent;        /**< Indica quanto foi mandado dentro de um intervalo */
   struct timert timer;       /**< */
   struct timert cronometro; /**< Vai subtrair o #timer a cada rodada do loop principal */
   int waiting;         /**< Indica se o cliente esta 'esperando' para receber dados entre segundos */
+
+  int next_state; /**< Guarda o estado que tem que ir apos enviar o arquivo */
 };
 
 
@@ -74,13 +82,25 @@ struct c_handler
 /*    Usando ASCIIDoc
  *
 
-Eu sempre gostei de escrever READMEs com enfeites ASCII. Caixas com +*+, linhas com +=+...
-Daí quando tinha que passar essas informações para sites, eu fazia o HTML manualmente. Todos os +<br />+s,
-+<tables>+ e +<h2>+. Nossa, como isso é chato. Tem vezes em que perco a concentração no texto e
-tenho que ver se tal tag se escreve dessa forma ou de outra...
+ASCIIDoc é um modo simples de se escrever documentos. Você escreve um documento plain-text com uma formatação específica e o programa +asciidoc+ converte em outros formatos.
+Por exemplo, veja o bloco de texto abaixo:
 
-Quando vou postar no Wordpress tambem. Várias vezes eu quero postar pedaços de códigos
-mas não dá certo por causa de caracteres especiais como +<+ ou +>+.
+
+Depois de aplicar a conversão para HTML, por exemplo, ele fica assim:
+
+
+Welcome to my project site!
+
+Here I'll talk about my programs, ideas and stuff.
+I mostly program in C and I try hard to make simple, easy-to-read code. Also, I love ASCII Art and text-based software.
+
+Current projects:
+
+* nSnake (The classic snake game with ncurses)
+**  A implementation of the classic snake game with textual interface. It is playable at command-line and uses the nCurses C library for graphics.
+* Custom Doxygen CSS (A new interface for the Doxygen documentation)
+**  My CSS mod of the default Doxygen documentation appearance. I try to comment a lot to ease new modifications.
+
 
  *
  */
@@ -90,31 +110,37 @@ mas não dá certo por causa de caracteres especiais como +<+ ou +>+.
  */
 enum states
 {
-  FINISHED, MSG_RECEIVING, FILE_PROCESSING, HEADER_SENDING,
-  ERROR_HEADER_SENDING, FILE_SENDING, ERROR_SENDING, MSG_RECEIVED,
-  HEADER_SENT, ERROR_HEADER_SENT, FILE_SENT, ERROR_SENT
+  FINISHED = -1, HEADER_RECEIVING, BODY_RECEIVING, REQUEST_RECEIVED,
+  REQUEST_ANALYZE, GET_CHECK_FILE, PUT_CHECK_FILE, HEADER_PREPARE, FILE_PREPARE,
+  ERROR_HANDLE, FILE_SENDING, FILE_SENT
+
+  //~ MSG_RECEIVING, MSG_RECEIVED, FILE_PROCESSING, HEADER_SENDING,
+  //~ ERROR_HEADER_SENDING, FILE_SENDING, ERROR_SENDING,
+  //~ HEADER_SENT, ERROR_HEADER_SENT, FILE_SENT, ERROR_SENT
 };
 
 
 int  c_handler_list_init(struct c_handler_list* l, int max_clients);
-int  c_handler_init(struct c_handler** h, int sck, char* rootdir, int bandwidth);
+int  c_handler_init(struct c_handler** h, int sck, char* rootdir, size_t rootdirsize, int bandwidth);
 int  c_handler_add(struct c_handler* h, struct c_handler_list* l);
 int  c_handler_remove(struct c_handler* h, struct c_handler_list* l);
 void c_handler_exit(struct c_handler* h);
 
-int receive_message(struct c_handler* h);
-int file_check(struct c_handler* h, char* rootdir, int rootdirsize);
-int prepare_msg_to_send(struct c_handler* h);
-int keep_sending_msg(struct c_handler* h);
-int start_sending_file(struct c_handler* h);
-int stop_sending_file(struct c_handler* h);
-int get_file_chunk(struct c_handler* h);
-int build_error_html(struct c_handler* h);
+int receive_request(struct c_handler* h);
 int parse_request(struct c_handler* h);
-int build_header(struct c_handler* h);
 
 void get_new_smaller_timeout (struct c_handler_list* l, struct c_handler *h);
 void get_new_maxfds(int* maxfds, struct c_handler_list* l, struct c_handler* h);
 
+int open_file(struct c_handler *h, FILE *file, size_t size);
+int close_file(struct c_handler* h);
+int get_chunk(struct c_handler* h);
+int send_chunk(struct c_handler* h);
+int resolve_symlinks(char *path, size_t size);
+int check_path(char *path, char *rootdir, size_t rootdirsize);
+int check_file(char *path);
+int check_file_is_dir(char *path);
+int append_index_html(char *path, size_t pathsize);
+int get_file_size(char *path);
 
 #endif /* CLIENT_H_DEFINED */

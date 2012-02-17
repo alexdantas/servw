@@ -18,9 +18,15 @@
 
 #define LOG_FLUSH                      fflush(stdout);
 
-#define LOG_WRITE_ERROR(a)             if (WILL_WRITE_TO_LOG == 1)     \
+#define LOG_ERROR(a)                   if (WILL_WRITE_TO_LOG == 1)     \
                                        {                               \
                                          fprintf(stderr, a);           \
+                                         fprintf(stdout, "Erro gravado em stderr\n"); \
+                                       }
+
+#define LOG_PERROR(a)                  if (WILL_WRITE_TO_LOG == 1)     \
+                                       {                               \
+                                         perror(a);                    \
                                          fprintf(stdout, "Erro gravado em stderr\n"); \
                                        }
 
